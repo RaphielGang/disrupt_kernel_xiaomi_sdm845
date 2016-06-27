@@ -7,6 +7,7 @@ quote   := "
 squote  := '
 empty   :=
 space   := $(empty) $(empty)
+tab     := $(empty)	$(empty)
 space_escape := _-_SPACE_-_
 pound := \#
 
@@ -84,11 +85,35 @@ cc-cross-prefix =  \
 # output directory for tests below
 TMPOUT := $(if $(KBUILD_EXTMOD),$(firstword $(KBUILD_EXTMOD))/)
 
+KBUILD_SHELLCACHE := .shellcache
+
+ifeq ($(KBUILD_SHELLCACHE),)
+cached-shell = $(shell $(1))
+else
+-include $(KBUILD_SHELLCACHE)
+
+sanitize = $(subst $(space),_,	\
+	      $(subst $(tab),_,	\
+	      $(subst \n,_,	\
+	      $(subst :,_,	\
+	      $(subst \#,_,	\
+	      $(subst =,_,	\
+	      $(subst $$,_,	\
+	      $(subst ',_,	\
+	      $(subst ",_,	\
+	      $(1))))))))))
+
+cached-shell = $(if $(cmd$(call sanitize,$(1))),$(subst CACHED,,$(cmd$(call sanitize,$(1)))),$(shell \
+	res='$(shell $(1))';					\
+	echo "$$res";						\
+	echo 'cmd$(call sanitize,$(1)) = CACHED'"$$res" >> $(KBUILD_SHELLCACHE)))
+endif
+
 # try-run
 # Usage: option = $(call try-run, $(CC)...-o "$$TMP",option-ok,otherwise)
 # Exit code chooses option. "$$TMP" is can be used as temporary file and
 # is automatically cleaned up.
-try-run = $(shell set -e;		\
+try-run = $(call cached-shell,set -e;	\
 	TMP="$(TMPOUT).$$$$.tmp";	\
 	TMPO="$(TMPOUT).$$$$.o";	\
 	if ($(1)) >/dev/null 2>&1;	\
@@ -146,26 +171,26 @@ cc-disable-warning = $(call try-run,\
 
 # cc-name
 # Expands to either gcc or clang
-cc-name = $(shell $(CC) -v 2>&1 | grep -q "clang version" && echo clang || echo gcc)
+cc-name = $(call cached-shell,$(CC) -v 2>&1 | grep -q "clang version" && echo clang || echo gcc)
 
 # __cc-version
 # Returns compiler version
-__cc-version = $(shell $(CONFIG_SHELL) $(srctree)/scripts/$(cc-name)-version.sh $(CC))
+__cc-version = $(call cached-shell,$(CONFIG_SHELL) $(srctree)/scripts/$(cc-name)-version.sh $(CC))
 
 # __cc-fullversion
 # Returns full compiler version
-__cc-fullversion = $(shell $(CONFIG_SHELL) \
+__cc-fullversion = $(call cached-shell,$(CONFIG_SHELL) \
 	$(srctree)/scripts/$(cc-name)-version.sh -p $(CC))
 
 # __cc-ifversion
 # Matches compiler name and version
 # Usage:  EXTRA_CFLAGS += $(call cc-if-name-version, gcc, -lt, 0402, -O1)
-__cc-ifversion = $(shell [ $(cc-name) = $(1) ] && [ $(__cc-version) $(2) $(3) ] && echo $(4) || echo $(5))
+__cc-ifversion = $(call cached-shell, [ $(cc-name) = $(1) ] && [ $(__cc-version) $(2) $(3) ] && echo $(4) || echo $(5))
 
 # __cc-if-fullversion
 # Matches compiler name and full version
 # Usage:  EXTRA_CFLAGS += $(call cc-if-name-fullversion, gcc, -lt, 040502, -O1)
-__cc-if-fullversion = $(shell [ $(cc-name) = $(1) ] && [ $(__cc-fullversion) $(2) $(3) ] && echo $(4) || echo $(5))
+__cc-if-fullversion = $(call cached-shell, [ $(cc-name) = $(1) ] && [ $(__cc-fullversion) $(2) $(3) ] && echo $(4) || echo $(5))
 
 # gcc-ifversion
 gcc-ifversion = $(call __cc-ifversion, gcc, $(1), $(2), $(3), $(4))
@@ -180,10 +205,10 @@ clang-ifversion =  $(call __cc-ifversion, clang, $(1), $(2), $(3), $(4))
 clang-if-fullversion = (call __cc-if-fullversion, clang, $(1), $(2), $(3), $(4))
 
 # cc-version
-cc-version = $(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-version.sh $(CC))
+cc-version = $(call cached-shell, $(CONFIG_SHELL) $(srctree)/scripts/gcc-version.sh $(CC))
 
 # cc-fullversion
-cc-fullversion = $(shell $(CONFIG_SHELL) \
+cc-fullversion = $(call cached-shell, $(CONFIG_SHELL) \
 	$(srctree)/scripts/gcc-version.sh -p $(CC))
 
 # backward compatibility
@@ -208,19 +233,19 @@ ar-option = $(call try-run, $(AR) rc$(1) "$$TMP",$(1),$(2))
 
 # ld-name
 # Expands to either bfd or gold
-ld-name = $(shell $(LD) -v 2>&1 | grep -q "GNU gold" && echo gold || echo bfd)
+ld-name = $(call cached-shell, $(LD) -v 2>&1 | grep -q "GNU gold" && echo gold || echo bfd)
 
 # ld-version
 # Note this is mainly for HJ Lu's 3 number binutil versions
-ld-version = $(shell $(LD) --version | $(srctree)/scripts/ld-version.sh)
+ld-version = $(call cached-shell, $(LD) --version | $(srctree)/scripts/ld-version.sh)
 
 # ld-ifversion
 # Usage:  $(call ld-ifversion, -ge, 22252, y)
-ld-ifversion = $(shell [ $(ld-version) $(1) $(2) ] && echo $(3) || echo $(4))
+ld-ifversion = $(call cached-shell, [ $(ld-version) $(1) $(2) ] && echo $(3) || echo $(4))
 
 # __ld-ifversion
 # Usage:  $(call __ld-ifversion, gold, -ge, 112000000, y)
-__ld-ifversion = $(shell [ $(ld-name) = $(1) ] && [ $(ld-version) $(2) $(3) ] && echo $(4) || echo $(5))
+__ld-ifversion = $(call cached-shell, [ $(ld-name) = $(1) ] && [ $(ld-version) $(2) $(3) ] && echo $(4) || echo $(5))
 
 # bfd-ifversion
 # Usage:  $(call bfd-ifversion, -ge, 227000000, y)
