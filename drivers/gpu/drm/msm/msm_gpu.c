@@ -712,6 +712,6 @@ void msm_gpu_cleanup(struct msm_gpu *gpu)
 	if (gpu->fctx)
 		msm_fence_context_free(gpu->fctx);
 
-	if (gpu->aspace)
+	if (!IS_ERR_OR_NULL(gpu->aspace))
 		msm_gem_address_space_destroy(gpu->aspace);
 }
