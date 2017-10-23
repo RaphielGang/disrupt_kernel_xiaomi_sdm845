@@ -234,6 +234,7 @@ struct sde_crtc_fps_info {
  * @cur_perf      : current performance committed to clock/bandwidth driver
  * @rp_lock       : serialization lock for resource pool
  * @rp_head       : list of active resource pool
+ * @plane_mask_old: keeps track of the planes used in the previous commit
  */
 struct sde_crtc {
 	struct drm_crtc base;
@@ -310,6 +311,8 @@ struct sde_crtc {
 
 	struct mutex rp_lock;
 	struct list_head rp_head;
+
+	u32 plane_mask_old;
 
 	/* blob for histogram data */
 	struct drm_property_blob *hist_blob;
