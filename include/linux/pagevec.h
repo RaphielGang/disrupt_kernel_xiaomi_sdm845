@@ -16,7 +16,8 @@ struct address_space;
 
 struct pagevec {
 	unsigned char nr;
-	unsigned long cold;
+	bool cold;
+	bool drained;
 	struct page *pages[PAGEVEC_SIZE];
 };
 
@@ -45,6 +46,7 @@ static inline void pagevec_init(struct pagevec *pvec, int cold)
 {
 	pvec->nr = 0;
 	pvec->cold = cold;
+	pvec->drained = false;
 }
 
 static inline void pagevec_reinit(struct pagevec *pvec)
