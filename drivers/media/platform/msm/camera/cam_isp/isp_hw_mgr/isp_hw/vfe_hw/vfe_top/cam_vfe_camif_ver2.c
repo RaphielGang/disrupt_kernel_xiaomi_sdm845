@@ -611,7 +611,6 @@ static int cam_vfe_camif_handle_irq_bottom_half(void *handler_priv,
 				~(camif_priv->reg_data->error_irq_mask0);
 			payload->irq_reg_val[CAM_IFE_IRQ_CAMIF_REG_STATUS1] &=
 				~(camif_priv->reg_data->error_irq_mask1);
-			cam_vfe_put_evt_payload(payload->core_info, &payload);
 		}
 
 		if (camif_priv->camif_debug &
