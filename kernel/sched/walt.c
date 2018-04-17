@@ -3202,7 +3202,8 @@ static void transfer_busy_time(struct rq *rq, struct related_thread_group *grp,
 	BUG_ON((s64)*src_nt_prev_runnable_sum < 0);
 }
 
-unsigned int sysctl_sched_little_cluster_coloc_fmin_khz;
+/* Set to 1GHz by default */
+unsigned int sysctl_sched_little_cluster_coloc_fmin_khz = 1000000;
 static u64 coloc_boost_load;
 
 void walt_map_freq_to_load(void)
