@@ -59,12 +59,14 @@ struct sde_encoder_hw_resources {
  * @affected_displays:  bitmask, bit set means the ROI of the commit lies within
  *                      the bounds of the physical display at the bit index
  * @num_channels: Add number of encoder channels
+ * @recovery_events_enabled: indicates status of client for recoovery events
  */
 struct sde_encoder_kickoff_params {
 	u32 inline_rotate_prefill;
 	u32 is_primary;
 	unsigned long affected_displays;
 	u32 num_channels;
+	bool recovery_events_enabled;
 };
 
 /**
@@ -272,5 +274,21 @@ void sde_encoder_control_idle_pc(struct drm_encoder *enc, bool enable);
  * @Return:     non zero value if ctl start timeout occurred
  */
 int sde_encoder_get_ctlstart_timeout_state(struct drm_encoder *enc);
+
+/**
+ * sde_encoder_recovery_events_enabled - checks if client has enabled
+ * sw recovery mechanism for this connector
+ * @drm_enc:    Pointer to drm encoder structure
+ * @Return:     true if enabled
+ */
+bool sde_encoder_recovery_events_enabled(struct drm_encoder *encoder);
+
+/**
+ * sde_encoder_recovery_events_handler - handler to enable/disable the
+ * sw recovery for this connector
+ * @drm_enc:    Pointer to drm encoder structure
+ */
+void sde_encoder_recovery_events_handler(struct drm_encoder *encoder,
+		bool val);
 
 #endif /* __SDE_ENCODER_H__ */

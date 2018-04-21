@@ -797,4 +797,14 @@ int sde_connector_get_panel_vfp(struct drm_connector *connector,
  */
 int sde_connector_esd_status(struct drm_connector *connector);
 
+/**
+ * sde_connector_event_notify - signal hw recovery event to client
+ * @connector: pointer to connector
+ * @type:     event type
+ * @len:     length of the value of the event
+ * @val:     value
+ */
+int sde_connector_event_notify(struct drm_connector *connector, uint32_t type,
+		uint32_t len, uint32_t val);
+
 #endif /* _SDE_CONNECTOR_H_ */
