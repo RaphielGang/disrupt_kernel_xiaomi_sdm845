@@ -634,8 +634,8 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 		&s_ctrl->sensordata->power_info;
 	int rc = 0;
 
-	s_ctrl->is_probe_succeed = 0;
-	if (s_ctrl->sensor_state == CAM_SENSOR_INIT)
+	if ((s_ctrl->sensor_state == CAM_SENSOR_INIT) &&
+		(s_ctrl->is_probe_succeed == 0))
 		return;
 
 	cam_sensor_release_per_frame_resource(s_ctrl);
@@ -649,7 +649,6 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 	s_ctrl->bridge_intf.device_hdl = -1;
 	s_ctrl->bridge_intf.link_hdl = -1;
 	s_ctrl->bridge_intf.session_hdl = -1;
-
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
 	power_info->power_setting = NULL;
@@ -658,6 +657,7 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 	power_info->power_down_setting_size = 0;
 	s_ctrl->streamon_count = 0;
 	s_ctrl->streamoff_count = 0;
+	s_ctrl->is_probe_succeed = 0;
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
 }
 
@@ -797,6 +797,15 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	case CAM_ACQUIRE_DEV: {
 		struct cam_sensor_acquire_dev sensor_acq_dev;
 		struct cam_create_dev_hdl bridge_params;
+
+		if ((s_ctrl->is_probe_succeed == 0) ||
+			(s_ctrl->sensor_state != CAM_SENSOR_INIT)) {
+			CAM_WARN(CAM_SENSOR,
+				"Not in right state to aquire %d",
+				s_ctrl->sensor_state);
+			rc = -EINVAL;
+			goto release_mutex;
+		}
 
 		if (s_ctrl->bridge_intf.device_hdl != -1) {
 			CAM_ERR(CAM_SENSOR, "Device is already acquired");

@@ -905,14 +905,12 @@ static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 		e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
 		vfree(e_ctrl->cal_data.mapdata);
 		vfree(e_ctrl->cal_data.map);
-#ifndef CONFIG_USE_ROHM_BU64753
 		kfree(power_info->power_setting);
 		kfree(power_info->power_down_setting);
 		power_info->power_setting = NULL;
 		power_info->power_down_setting = NULL;
 		power_info->power_setting_size = 0;
 		power_info->power_down_setting_size = 0;
-#endif
 		e_ctrl->cal_data.num_data = 0;
 		e_ctrl->cal_data.num_map = 0;
 		break;
@@ -927,10 +925,8 @@ memdata_free:
 error:
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
-#ifndef CONFIG_USE_ROHM_BU64753
 	power_info->power_setting = NULL;
 	power_info->power_down_setting = NULL;
-#endif
 	vfree(e_ctrl->cal_data.map);
 	e_ctrl->cal_data.num_data = 0;
 	e_ctrl->cal_data.num_map = 0;
@@ -966,12 +962,10 @@ void cam_eeprom_shutdown(struct cam_eeprom_ctrl_t *e_ctrl)
 
 		kfree(power_info->power_setting);
 		kfree(power_info->power_down_setting);
-#ifndef CONFIG_USE_ROHM_BU64753
 		power_info->power_setting = NULL;
 		power_info->power_down_setting = NULL;
 		power_info->power_setting_size = 0;
 		power_info->power_down_setting_size = 0;
-#endif
 	}
 
 	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
