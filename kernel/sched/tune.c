@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/rcupdate.h>
 #include <linux/slab.h>
+#include <linux/list.h>
 #include <trace/events/sched.h>
 #include <linux/list.h>
 

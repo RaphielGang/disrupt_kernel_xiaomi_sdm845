@@ -28,6 +28,10 @@ static enum sched_boost_policy boost_policy_dt = SCHED_BOOST_NONE;
 static DEFINE_MUTEX(boost_mutex);
 static unsigned int freq_aggr_threshold_backup;
 
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+static int boost_slot;
+#endif // CONFIG_DYNAMIC_STUNE_BOOST
+
 static inline void boost_kick(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
