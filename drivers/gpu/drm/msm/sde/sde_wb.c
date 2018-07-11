@@ -348,6 +348,8 @@ int sde_wb_get_mode_info(const struct drm_display_mode *drm_mode,
 	topology->num_intf = single_intf;
 
 	mode_info->comp_info.comp_type = MSM_DISPLAY_COMPRESSION_NONE;
+	mode_info->wide_bus_en = false;
+	mode_info->comp_info.comp_ratio = MSM_DISPLAY_COMPRESSION_RATIO_NONE;
 
 	return 0;
 }
