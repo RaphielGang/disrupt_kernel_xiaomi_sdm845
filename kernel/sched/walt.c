@@ -156,6 +156,7 @@ __read_mostly unsigned int sched_ravg_window =
 __read_mostly unsigned int walt_cpu_util_freq_divisor;
 
 /* Initial task load. Newly created tasks are assigned this load. */
+unsigned int __read_mostly sched_init_task_load_windows_scaled;
 unsigned int __read_mostly sysctl_sched_init_task_load_pct = 15;
 
 /*
@@ -237,6 +238,9 @@ static int __init set_sched_predl(char *str)
 	return 0;
 }
 early_param("sched_predl", set_sched_predl);
+
+__read_mostly unsigned int walt_scale_demand_divisor;
+#define scale_demand(d) ((d)/walt_scale_demand_divisor)
 
 void inc_rq_walt_stats(struct rq *rq, struct task_struct *p)
 {
@@ -1784,6 +1788,7 @@ static void update_history(struct rq *rq, struct task_struct *p,
 	}
 
 	p->ravg.demand = demand;
+	p->ravg.demand_scaled = scale_demand(demand);
 	p->ravg.coloc_demand = div64_u64(sum, sched_ravg_hist_size);
 	p->ravg.pred_demand = pred_demand;
 
@@ -2038,6 +2043,7 @@ void init_new_task_load(struct task_struct *p)
 {
 	int i;
 	u32 init_load_windows;
+	u32 init_load_windows_scaled;
 	u32 init_load_pct;
 
 	p->init_load_pct = 0;
@@ -2059,8 +2065,10 @@ void init_new_task_load(struct task_struct *p)
 
 	init_load_windows = div64_u64((u64)init_load_pct *
 				(u64)sched_ravg_window, 100);
+	init_load_windows_scaled = scale_demand(init_load_windows);
 
 	p->ravg.demand = init_load_windows;
+	p->ravg.demand_scaled = init_load_windows_scaled;
 	p->ravg.coloc_demand = init_load_windows;
 	p->ravg.pred_demand = 0;
 	for (i = 0; i < RAVG_HIST_SIZE_MAX; ++i)
@@ -3387,6 +3395,20 @@ void walt_sched_init(struct rq *rq)
 	init_irq_work(&walt_cpufreq_irq_work, walt_irq_work);
 	walt_rotate_work_init();
 
+	sched_init_task_load_windows =
+		div64_u64((u64)sysctl_sched_init_task_load_pct *
+			  (u64)sched_ravg_window, 100);
+}
+
+void walt_sched_init_rq(struct rq *rq)
+{
+	int j;
+
+	if (cpu_of(rq) == 0)
+		walt_init_once();
+
+	cpumask_set_cpu(cpu_of(rq), &rq->freq_domain_cpumask);
+
 	rq->walt_stats.cumulative_runnable_avg = 0;
 	rq->window_start = 0;
 	rq->cum_window_start = 0;
@@ -3435,4 +3457,7 @@ void walt_sched_init(struct rq *rq)
 
 	walt_cpu_util_freq_divisor =
 	    (sched_ravg_window >> SCHED_CAPACITY_SHIFT) * 100;
+	walt_scale_demand_divisor = sched_ravg_window >> SCHED_CAPACITY_SHIFT;
+	sched_init_task_load_windows_scaled =
+		scale_demand(sched_init_task_load_windows);
 }
