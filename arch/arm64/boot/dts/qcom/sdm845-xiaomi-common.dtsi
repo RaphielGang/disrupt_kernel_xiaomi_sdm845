@@ -1,0 +1,32 @@
+/* Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&red_led {
+	linux,name = "white";
+	qcom,start-idx = <1>;
+	qcom,idx-len = <11>;
+	qcom,duty-pcts = [00 05 0a 0f 14 1d 28 32 3c 4b 64];
+	qcom,lut-flags = <0x1f>;
+	qcom,pause-lo = <2000>;
+	qcom,pause-hi = <1000>;
+	qcom,ramp-step-ms = <100>;
+	qcom,use-blink;
+	status = "okay";
+};
+
+&green_led {
+	status = "disabled";
+};
+
+&blue_led {
+	status = "disabled";
+};
