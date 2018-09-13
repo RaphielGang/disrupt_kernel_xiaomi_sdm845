@@ -310,6 +310,7 @@ struct cam_req_mgr_connected_device {
  *                         frame in sync link as well.
  * @open_req_cnt         : Counter to keep track of open requests that are yet
  *                         to be serviced in the kernel.
+ * @last_flush_id        : Last request to flush
  *
  */
 struct cam_req_mgr_core_link {
@@ -335,6 +336,7 @@ struct cam_req_mgr_core_link {
 	bool                                 sync_link_sof_skip;
 	int64_t                              sync_trigger_frame_id;
 	int32_t                              open_req_cnt;
+	uint32_t                             last_flush_id;
 };
 
 /**
