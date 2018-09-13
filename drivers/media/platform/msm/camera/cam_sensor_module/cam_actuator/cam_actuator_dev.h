@@ -115,6 +115,7 @@ struct intf_params {
  * @i2c_data: I2C register settings structure
  * @act_info: Sensor query cap structure
  * @of_node: Node ptr
+ * @last_flush_req: Last request to flush
  */
 struct cam_actuator_ctrl_t {
 	char device_name[CAM_CTX_DEV_NAME_MAX_LENGTH];
@@ -131,6 +132,7 @@ struct cam_actuator_ctrl_t {
 	struct i2c_data_settings i2c_data;
 	struct cam_actuator_query_cap act_info;
 	struct intf_params bridge_intf;
+	uint32_t last_flush_req;
 	struct platform_device *pdev;
 };
 
