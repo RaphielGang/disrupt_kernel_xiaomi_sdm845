@@ -134,10 +134,10 @@ static int __init control_devkmsg(char *str)
 	 */
 	if (devkmsg_log == DEVKMSG_LOG_MASK_ON) {
 		memset(devkmsg_log_str, 0, DEVKMSG_STR_MAX_SIZE);
-		strncpy(devkmsg_log_str, "on", 2);
+		strlcpy(devkmsg_log_str, "on", 2);
 	} else if (devkmsg_log == DEVKMSG_LOG_MASK_OFF) {
 		memset(devkmsg_log_str, 0, DEVKMSG_STR_MAX_SIZE);
-		strncpy(devkmsg_log_str, "off", 3);
+		strlcpy(devkmsg_log_str, "off", 3);
 	}
 	/* else "ratelimit" which is set by default. */
 
