@@ -472,16 +472,13 @@ int cam_node_deinit(struct cam_node *node)
 int cam_node_shutdown(struct cam_node *node)
 {
 	int i = 0;
-	int rc = 0;
 
 	if (!node)
 		return -EINVAL;
 
 	for (i = 0; i < node->ctx_size; i++) {
-		if (node->ctx_list[i].dev_hdl > 0) {
-			rc = cam_context_shutdown(&(node->ctx_list[i]));
-			if (rc)
-				continue;
+		if (node->ctx_list[i].dev_hdl >= 0) {
+			cam_context_shutdown(&(node->ctx_list[i]));
 			cam_context_putref(&(node->ctx_list[i]));
 		}
 	}
