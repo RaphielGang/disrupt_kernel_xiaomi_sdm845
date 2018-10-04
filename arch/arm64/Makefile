@@ -59,6 +59,13 @@ LD		+= -EL
 UTS_MACHINE	:= aarch64
 endif
 
+# SDM845 optimizations
+arch-$(CONFIG_ARCH_SDM845) := $(call cc-option,-mcpu=kryo,$(call cc-option,-mcpu=cortex-a75.cortex-a55,$(call cc-option,-march=armv8.2-a,-march=armv8-a)))
+tune-$(CONFIG_ARCH_SDM845) := $(call cc-option,-mtune=kryo,$(call cc-option,-mtune=cortex-a75.cortex-a55,))
+
+KBUILD_CFLAGS += $(arch-y) $(tune-y)
+KBUILD_AFLAGS += $(arch-y) $(tune-y)
+
 CHECKFLAGS	+= -D__aarch64__
 
 ifeq ($(CONFIG_ARM64_MODULE_CMODEL_LARGE), y)
