@@ -5649,6 +5649,12 @@ __wlan_hdd_cfg80211_wifi_configuration_set(struct wiphy *wiphy,
 		override_li = nla_get_u32(
 			tb[QCA_WLAN_VENDOR_ATTR_CONFIG_LISTEN_INTERVAL]);
 
+		if (override_li > CFG_ENABLE_DYNAMIC_DTIM_MAX) {
+			hdd_err_ratelimited(HDD_NL_ERR_RATE_LIMIT,
+				"Invalid value for listen interval - %d",
+				override_li);
+			return -EINVAL;
+		}
 		status = sme_override_listen_interval(hdd_ctx->hHal,
 						      adapter->sessionId,
 						      override_li);
@@ -6274,7 +6280,7 @@ static int __wlan_hdd_cfg80211_wifi_logger_start(struct wiphy *wiphy,
 	QDF_STATUS status;
 	hdd_context_t *hdd_ctx = wiphy_priv(wiphy);
 	struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_WIFI_LOGGER_START_MAX + 1];
-	struct sir_wifi_start_log start_log;
+	struct sir_wifi_start_log start_log = { 0 };
 
 	ENTER_DEV(wdev->netdev);
 
@@ -6325,6 +6331,8 @@ static int __wlan_hdd_cfg80211_wifi_logger_start(struct wiphy *wiphy,
 	start_log.is_iwpriv_command = nla_get_u32(
 			tb[QCA_WLAN_VENDOR_ATTR_WIFI_LOGGER_FLAGS]);
 	hdd_debug("is_iwpriv_command =%d", start_log.is_iwpriv_command);
+
+	start_log.user_triggered = 1;
 
 	/* size is buff size which can be set using iwpriv command*/
 	start_log.size = 0;
@@ -11087,31 +11095,34 @@ end:
  *
  * Return: 0 for success, non-zero for failure
  */
-static int hdd_post_get_chain_rssi_rsp(hdd_context_t *hdd_ctx)
+static int hdd_post_get_chain_rssi_rsp(hdd_context_t *hdd_ctx,
+				       struct hdd_chain_rssi_priv *priv)
 {
 	struct sk_buff *skb = NULL;
-	int data_len = sizeof(hdd_ctx->chain_rssi_context.result);
+	int data_len = sizeof(priv->result);
+	int rc;
 
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(hdd_ctx->wiphy,
 		data_len+NLMSG_HDRLEN);
 
 	if (!skb) {
-		hdd_err(FL("cfg80211_vendor_event_alloc failed"));
+		hdd_err("cfg80211_vendor_event_alloc failed");
 		return -ENOMEM;
 	}
 
-	if (nla_put(skb, QCA_WLAN_VENDOR_ATTR_CHAIN_RSSI, data_len,
-			&hdd_ctx->chain_rssi_context.result)) {
-		hdd_err(FL("put fail"));
+	rc = nla_put(skb, QCA_WLAN_VENDOR_ATTR_CHAIN_RSSI, data_len,
+		     &priv->result);
+	if (rc) {
+		hdd_err("put fail");
 		goto nla_put_failure;
 	}
 
 	cfg80211_vendor_cmd_reply(skb);
-	return 0;
+	return rc;
 
 nla_put_failure:
 	kfree_skb(skb);
-	return -EINVAL;
+	return rc;
 }
 
 /**
@@ -11131,13 +11142,18 @@ static int __wlan_hdd_cfg80211_get_chain_rssi(struct wiphy *wiphy,
 	hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(wdev->netdev);
 	struct get_chain_rssi_req_params req_msg;
 	hdd_context_t *hdd_ctx = wiphy_priv(wiphy);
-	struct hdd_chain_rssi_context *context;
+	struct hdd_chain_rssi_priv *priv;
 	struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_MAX + 1];
 	QDF_STATUS status;
 	int retval;
-	unsigned long rc;
 	const int mac_len = sizeof(req_msg.peer_macaddr);
 	int msg_len;
+	struct hdd_request *request;
+	void *cookie;
+	static struct hdd_request_params params = {
+		.priv_size = sizeof(*priv),
+		.timeout_ms = WLAN_WAIT_TIME_CHAIN_RSSI,
+	};
 
 	ENTER();
 
@@ -11169,33 +11185,42 @@ static int __wlan_hdd_cfg80211_get_chain_rssi(struct wiphy *wiphy,
 	       nla_data(tb[QCA_WLAN_VENDOR_ATTR_MAC_ADDR]), mac_len);
 	req_msg.session_id = pAdapter->sessionId;
 
-	spin_lock(&hdd_context_lock);
-	context = &hdd_ctx->chain_rssi_context;
-	INIT_COMPLETION(context->response_event);
-	context->ignore_result = false;
-	spin_unlock(&hdd_context_lock);
+	request = hdd_request_alloc(&params);
+	if (!request) {
+		hdd_err("Request Allocation Failure");
+		return -ENOMEM;
+	}
+
+	cookie = hdd_request_cookie(request);
+
+	priv = hdd_request_priv(request);
+
+	sme_chain_rssi_register_callback(hdd_ctx->hHal,
+					 wlan_hdd_cfg80211_chainrssi_callback,
+					 cookie);
 
 	status = sme_get_chain_rssi(hdd_ctx->hHal, &req_msg);
 	if (!QDF_IS_STATUS_SUCCESS(status)) {
-		hdd_err(FL("sme_get_chain_rssi failed(err=%d)"), status);
-		return -EINVAL;
+		hdd_err("sme_get_chain_rssi failed(err=%d)", status);
+		retval = -EINVAL;
+		goto exit;
 	}
 
-	rc = wait_for_completion_timeout(&context->response_event,
-			msecs_to_jiffies(WLAN_WAIT_TIME_CHAIN_RSSI));
-	if (!rc) {
-		hdd_err(FL("Target response timed out"));
-		spin_lock(&hdd_context_lock);
-		context->ignore_result = true;
-		spin_unlock(&hdd_context_lock);
-		return -ETIMEDOUT;
+	retval = hdd_request_wait_for_response(request);
+	if (retval) {
+		hdd_err("Target response timed out for get chain rssi");
+		retval = -ETIMEDOUT;
+		goto exit;
 	}
 
-	retval = hdd_post_get_chain_rssi_rsp(hdd_ctx);
+	retval = hdd_post_get_chain_rssi_rsp(hdd_ctx, priv);
 	if (retval)
-		hdd_err(FL("Failed to send chain rssi to user space"));
+		hdd_err("Failed to send chain rssi to user space");
 
 	EXIT();
+exit:
+	sme_chain_rssi_deregister_callback(hdd_ctx->hHal);
+	hdd_request_put(request);
 	return retval;
 }
 
@@ -11221,33 +11246,27 @@ static int wlan_hdd_cfg80211_get_chain_rssi(struct wiphy *wiphy,
 	return ret;
 }
 
-void wlan_hdd_cfg80211_chainrssi_callback(void *ctx, void *pmsg)
+void wlan_hdd_cfg80211_chainrssi_callback(void *ctx, void *pmsg, void *cookie)
 {
-	hdd_context_t *hdd_ctx = (hdd_context_t *)ctx;
 	struct chain_rssi_result *data = (struct chain_rssi_result *)pmsg;
-	struct hdd_chain_rssi_context *context;
-	bool ignore_result;
+	struct hdd_chain_rssi_priv *priv;
+	struct hdd_request *request = NULL;
 
 	ENTER();
 
-	if (wlan_hdd_validate_context(hdd_ctx))
-		return;
-
-	spin_lock(&hdd_context_lock);
-	context = &hdd_ctx->chain_rssi_context;
-	ignore_result = context->ignore_result;
-
-	if (ignore_result) {
-		hdd_err(FL("Ignore the result received after timeout"));
-		spin_unlock(&hdd_context_lock);
+	request = hdd_request_get(cookie);
+	if (!request) {
+		hdd_err("Obselete request");
 		return;
 	}
 
-	memcpy(&context->result, data->chain_rssi,
-		sizeof(data->chain_rssi));
+	priv = hdd_request_priv(request);
 
-	complete(&context->response_event);
-	spin_unlock(&hdd_context_lock);
+	memcpy(&priv->result, data, sizeof(*data));
+
+	hdd_request_complete(request);
+	hdd_request_put(request);
+	EXIT();
 }
 
 /**
@@ -14491,23 +14510,18 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
 		return -EINVAL;
 	}
 
-	pConfig = pHddCtx->config;
-	wdev = ndev->ieee80211_ptr;
-
-	/* Reset the current device mode bit mask */
-	cds_clear_concurrency_mode(pAdapter->device_mode);
-
-	/*
-	 * must be called after cds_clear_concurrency_mode's invocation so the
-	 * current adapter's old device mode mapping is removed from our
-	 * internal records.
-	 */
 	if (!cds_allow_concurrency(
 				wlan_hdd_convert_nl_iftype_to_hdd_type(type),
 				0, HW_MODE_20_MHZ)) {
 		hdd_debug("This concurrency combination is not allowed");
 		return -EINVAL;
 	}
+
+	pConfig = pHddCtx->config;
+	wdev = ndev->ieee80211_ptr;
+
+	/* Reset the current device mode bit mask */
+	cds_clear_concurrency_mode(pAdapter->device_mode);
 
 	hdd_update_tdls_ct_and_teardown_links(pHddCtx);
 	if ((pAdapter->device_mode == QDF_STA_MODE) ||
@@ -17970,6 +17984,60 @@ static int wlan_hdd_cfg80211_set_privacy(hdd_adapter_t *pAdapter,
 	return status;
 }
 
+/**
+ * wlan_hdd_clear_wapi_privacy() - reset WAPI settings in HDD layer
+ * @adapter: pointer to HDD adapter object
+ *
+ * This function resets all WAPI related parameters imposed before STA
+ * connection starts. It's invoked when privacy checking against concurrency
+ * fails, to make sure no improper WAPI settings are still populated before
+ * returning an error to the upper layer requester.
+ *
+ * Return: none
+ */
+#ifdef FEATURE_WLAN_WAPI
+static inline void wlan_hdd_clear_wapi_privacy(hdd_adapter_t *adapter)
+{
+	adapter->wapi_info.nWapiMode = 0;
+	adapter->wapi_info.wapiAuthMode = WAPI_AUTH_MODE_OPEN;
+}
+#else
+static inline void wlan_hdd_clear_wapi_privacy(hdd_adapter_t *adapter)
+{
+}
+#endif
+
+/**
+ * wlan_hdd_cfg80211_clear_privacy() - reset STA security parameters
+ * @adapter: pointer to HDD adapter object
+ *
+ * This function resets all privacy related parameters imposed
+ * before STA connection starts. It's invoked when privacy checking
+ * against concurrency fails, to make sure no improper settings are
+ * still populated before returning an error to the upper layer requester.
+ *
+ * Return: none
+ */
+static void wlan_hdd_cfg80211_clear_privacy(hdd_adapter_t *adapter)
+{
+	hdd_wext_state_t *wext_state = WLAN_HDD_GET_WEXT_STATE_PTR(adapter);
+	hdd_station_ctx_t *hdd_sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
+
+	hdd_debug("reseting all privacy configurations");
+
+	wext_state->wpaVersion = IW_AUTH_WPA_VERSION_DISABLED;
+
+	hdd_sta_ctx->conn_info.authType = eCSR_AUTH_TYPE_NONE;
+	wext_state->roamProfile.AuthType.authType[0] = eCSR_AUTH_TYPE_NONE;
+
+	hdd_sta_ctx->conn_info.ucEncryptionType = eCSR_ENCRYPT_TYPE_NONE;
+	wext_state->roamProfile.EncryptionType.numEntries = 0;
+	hdd_sta_ctx->conn_info.mcEncryptionType = eCSR_ENCRYPT_TYPE_NONE;
+	wext_state->roamProfile.mcEncryptionType.numEntries = 0;
+
+	wlan_hdd_clear_wapi_privacy(adapter);
+}
+
 int wlan_hdd_try_disconnect(hdd_adapter_t *pAdapter)
 {
 	unsigned long rc;
@@ -18294,14 +18362,16 @@ static int __wlan_hdd_cfg80211_connect(struct wiphy *wiphy,
 				pAdapter->device_mode),
 				req->channel->hw_value, HW_MODE_20_MHZ)) {
 			hdd_warn("This concurrency combination is not allowed");
-			return -ECONNREFUSED;
+			status = -ECONNREFUSED;
+			goto con_chk_failed;
 		}
 	} else {
 		if (!cds_allow_concurrency(
 				cds_convert_device_mode_to_qdf_type(
 				pAdapter->device_mode), 0, HW_MODE_20_MHZ)) {
 			hdd_warn("This concurrency combination is not allowed");
-			return -ECONNREFUSED;
+			status = -ECONNREFUSED;
+			goto con_chk_failed;
 		}
 	}
 
@@ -18317,8 +18387,11 @@ static int __wlan_hdd_cfg80211_connect(struct wiphy *wiphy,
 						 bssid_hint, channel, 0);
 	if (0 > status) {
 		hdd_err("connect failed");
-		return status;
 	}
+	return status;
+
+con_chk_failed:
+	wlan_hdd_cfg80211_clear_privacy(pAdapter);
 	EXIT();
 	return status;
 }
