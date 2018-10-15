@@ -11,3 +11,18 @@ I didn't have any guidelines for branching mechanics in every Kat Kernel repo, a
 
 ## Technical Informations for Raphielscape Icarus
 ![icarus](https://i.imgur.com/3twR95d.png "IcarusBeryllium.exe")
+
+## LICENSE
+```
+ Copyright (c), The Linux Foundation. All rights reserved.
+ 
+ This software is licensed under the terms of the GNU General Public
+ License version 2, as published by the Free Software Foundation, and
+ may be copied, distributed, and modified under those terms.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+```
+> See the accompanying [COPYING](https://raw.githubusercontent.com/RaphielGang/kat_kernel_beryllium_sdm845/master/COPYING) file for more details.
