@@ -22,6 +22,8 @@
 #include <asm/nops.h>
 #include "../entry/calling.h"
 #include <asm/export.h>
+#include <asm/nospec-branch.h>
+#include <asm/fixmap.h>
 
 #ifdef CONFIG_PARAVIRT
 #include <asm/asm-offsets.h>
@@ -190,8 +192,8 @@ ENTRY(secondary_startup_64)
 	movq	$(init_level4_pgt - __START_KERNEL_map), %rax
 1:
 
-	/* Enable PAE mode and PGE */
-	movl	$(X86_CR4_PAE | X86_CR4_PGE), %ecx
+	/* Enable PAE and PSE, but defer PGE until kaiser_enabled is decided */
+	movl	$(X86_CR4_PAE | X86_CR4_PSE), %ecx
 	movq	%rcx, %cr4
 
 	/* Setup early boot stage 4 level pagetables. */
@@ -200,6 +202,7 @@ ENTRY(secondary_startup_64)
 
 	/* Ensure I am executing from virtual addresses */
 	movq	$1f, %rax
+	ANNOTATE_RETPOLINE_SAFE
 	jmp	*%rax
 1:
 
@@ -405,6 +408,27 @@ GLOBAL(early_recursion_flag)
 	.balign	PAGE_SIZE; \
 GLOBAL(name)
 
+#ifdef CONFIG_PAGE_TABLE_ISOLATION
+/*
+ * Each PGD needs to be 8k long and 8k aligned.  We do not
+ * ever go out to userspace with these, so we do not
+ * strictly *need* the second page, but this allows us to
+ * have a single set_pgd() implementation that does not
+ * need to worry about whether it has 4k or 8k to work
+ * with.
+ *
+ * This ensures PGDs are 8k long:
+ */
+#define KAISER_USER_PGD_FILL	512
+/* This ensures they are 8k-aligned: */
+#define NEXT_PGD_PAGE(name) \
+	.balign 2 * PAGE_SIZE; \
+GLOBAL(name)
+#else
+#define NEXT_PGD_PAGE(name) NEXT_PAGE(name)
+#define KAISER_USER_PGD_FILL	0
+#endif
+
 /* Automate the creation of 1 to 1 mapping pmd entries */
 #define PMDS(START, PERM, COUNT)			\
 	i = 0 ;						\
@@ -414,9 +438,10 @@ GLOBAL(name)
 	.endr
 
 	__INITDATA
-NEXT_PAGE(early_level4_pgt)
+NEXT_PGD_PAGE(early_level4_pgt)
 	.fill	511,8,0
 	.quad	level3_kernel_pgt - __START_KERNEL_map + _PAGE_TABLE
+	.fill	KAISER_USER_PGD_FILL,8,0
 
 NEXT_PAGE(early_dynamic_pgts)
 	.fill	512*EARLY_DYNAMIC_PAGE_TABLES,8,0
@@ -424,16 +449,18 @@ NEXT_PAGE(early_dynamic_pgts)
 	.data
 
 #ifndef CONFIG_XEN
-NEXT_PAGE(init_level4_pgt)
+NEXT_PGD_PAGE(init_level4_pgt)
 	.fill	512,8,0
+	.fill	KAISER_USER_PGD_FILL,8,0
 #else
-NEXT_PAGE(init_level4_pgt)
+NEXT_PGD_PAGE(init_level4_pgt)
 	.quad   level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
 	.org    init_level4_pgt + L4_PAGE_OFFSET*8, 0
 	.quad   level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
 	.org    init_level4_pgt + L4_START_KERNEL*8, 0
 	/* (2^48-(2*1024*1024*1024))/(2^39) = 511 */
 	.quad   level3_kernel_pgt - __START_KERNEL_map + _PAGE_TABLE
+	.fill	KAISER_USER_PGD_FILL,8,0
 
 NEXT_PAGE(level3_ident_pgt)
 	.quad	level2_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
@@ -444,6 +471,7 @@ NEXT_PAGE(level2_ident_pgt)
 	 */
 	PMDS(0, __PAGE_KERNEL_IDENT_LARGE_EXEC, PTRS_PER_PMD)
 #endif
+	.fill	KAISER_USER_PGD_FILL,8,0
 
 NEXT_PAGE(level3_kernel_pgt)
 	.fill	L3_START_KERNEL,8,0
@@ -466,13 +494,20 @@ NEXT_PAGE(level2_kernel_pgt)
 		KERNEL_IMAGE_SIZE/PMD_SIZE)
 
 NEXT_PAGE(level2_fixmap_pgt)
-	.fill	506,8,0
-	.quad	level1_fixmap_pgt - __START_KERNEL_map + _PAGE_TABLE
-	/* 8MB reserved for vsyscalls + a 2MB hole = 4 + 1 entries */
-	.fill	5,8,0
+	.fill	(512 - 4 - FIXMAP_PMD_NUM),8,0
+	pgtno = 0
+	.rept (FIXMAP_PMD_NUM)
+	.quad level1_fixmap_pgt + (pgtno << PAGE_SHIFT) - __START_KERNEL_map \
+		+ _PAGE_TABLE;
+	pgtno = pgtno + 1
+	.endr
+	/* 6 MB reserved space + a 2MB hole */
+	.fill	4,8,0
 
 NEXT_PAGE(level1_fixmap_pgt)
+	.rept (FIXMAP_PMD_NUM)
 	.fill	512,8,0
+	.endr
 
 #undef PMDS
 

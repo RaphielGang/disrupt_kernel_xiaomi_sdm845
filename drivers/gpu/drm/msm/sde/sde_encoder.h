@@ -31,7 +31,6 @@
 #define SDE_ENCODER_FRAME_EVENT_SIGNAL_RETIRE_FENCE	BIT(4)
 
 #define IDLE_POWERCOLLAPSE_DURATION	(66 - 16/2)
-#define IDLE_POWERCOLLAPSE_IN_EARLY_WAKEUP (200 - 16/2)
 
 /**
  * Encoder functions and data types
@@ -243,6 +242,9 @@ int sde_encoder_update_caps_for_cont_splash(struct drm_encoder *encoder);
  * esd timeout or other display failure notification. This event flows from
  * dsi, sde_connector to sde_encoder.
  *
+ * This api must not be called from crtc_commit (display) thread because it
+ * requests the flush work on same thread. It is called from esd check thread
+ * based on current design.
  *
  *      TODO: manage the event at sde_kms level for forward processing.
  * @drm_enc:    Pointer to drm encoder structure
