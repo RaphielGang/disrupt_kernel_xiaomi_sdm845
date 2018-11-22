@@ -1070,6 +1070,15 @@ static int fg_get_batt_profile(struct fg_chip *chip)
 		chip->bp.fastchg_curr_ma = -EINVAL;
 	}
 
+	if (strcmp(chip->bp.batt_type_str, "e10_atl_4000mAh")
+	|| strcmp(chip->bp.batt_type_str, "e10_cos_4000mAh"))
+		if (chip->bp.fastchg_curr_ma > 3000) {
+			chip->bp.fastchg_curr_ma *= 4;
+			pr_err("fastchg_curr_ma changed from to %dma for battery-type %s\n",
+					chip->bp.fastchg_curr_ma,
+					chip->bp.batt_type_str);
+		}
+
 	rc = of_property_read_u32(profile_node, "qcom,fg-cc-cv-threshold-mv",
 			&chip->bp.vbatt_full_mv);
 	if (rc < 0) {
