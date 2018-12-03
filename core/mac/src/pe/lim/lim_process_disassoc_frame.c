@@ -143,11 +143,6 @@ lim_process_disassoc_frame(tpAniSirGlobal pMac, uint8_t *pRxPacketInfo,
 		return;
 	}
 
-	if (frame_len < 2) {
-		pe_err("frame len less than 2");
-		return;
-	}
-
 	/* Get reasonCode from Disassociation frame body */
 	reasonCode = sir_read_u16(pBody);
 
