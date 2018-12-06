@@ -10,7 +10,7 @@
 I didn't have any guidelines for branching mechanics in every Kat Kernel repo, and `I love force pushing` even though I'll not regulary force pushing but when I do `mostly my pushes will happen more than twice` so for real don't `just forking this repo without knowing what to do when I do force pushing some fixups coz I like to dropping commits`
 
 ## Technical Informations for Raphielscape Icarus
-![icarus](https://i.imgur.com/FPCiVoP.png "IcarusBeryllium.exe")
+![icarus](https://i.imgur.com/KJj9e0d.png "IcarusBeryllium.exe")
 
 ## LICENSE
 ```
