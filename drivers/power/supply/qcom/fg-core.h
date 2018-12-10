@@ -448,6 +448,11 @@ struct batt_params {
 	struct timespec		last_soc_change_time;
 };
 
+struct fg_saved_data {
+	union power_supply_propval val;
+	unsigned long last_req_expires;
+};
+
 struct fg_chip {
 	struct thermal_zone_device	*tz_dev;
 	struct device		*dev;
@@ -547,6 +552,7 @@ struct fg_chip {
 	struct delayed_work	esr_timer_config_work;
 	struct delayed_work	soc_work;
 	struct delayed_work	empty_restart_fg_work;
+	struct fg_saved_data	saved_data[POWER_SUPPLY_PROP_MAX];
 };
 
 /* Debugfs data structures are below */
