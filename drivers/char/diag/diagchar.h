@@ -267,9 +267,19 @@ for (i = 0; i <= fwd_info->num_pd - 2; i++)	\
 
 #define DIAG_TS_SIZE	50
 
+#ifdef CONFIG_MHI_BUS
+#define DIAG_MDM_BUF_SIZE	4096
+#else
 #define DIAG_MDM_BUF_SIZE	2048
+#endif
+
+/* The Maximum request size is 4k + DCI header + footer (6 bytes) */
+#ifdef CONFIG_MHI_BUS
+#define DIAG_MDM_DCI_BUF_SIZE	(4096 + 6)
+#else
 /* The Maximum request size is 2k + DCI header + footer (6 bytes) */
 #define DIAG_MDM_DCI_BUF_SIZE	(2048 + 6)
+#endif
 
 #define DIAG_LOCAL_PROC	0
 
