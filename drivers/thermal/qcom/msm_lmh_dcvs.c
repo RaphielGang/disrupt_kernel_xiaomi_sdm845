@@ -143,7 +143,6 @@ static int limits_dcvs_get_freq_limits(uint32_t cpu, unsigned long *max_freq,
 static unsigned long limits_mitigation_notify(struct limits_dcvs_hw *hw)
 {
 	uint32_t val = 0;
-	unsigned int i;
 	struct device *cpu_dev = NULL;
 	unsigned long freq_val, max_limit = 0;
 	struct dev_pm_opp *opp_entry;
@@ -179,20 +178,15 @@ static unsigned long limits_mitigation_notify(struct limits_dcvs_hw *hw)
 	max_limit = FREQ_HZ_TO_KHZ(freq_val);
 
 	sched_update_cpu_freq_min_max(&hw->core_map, 0, max_limit);
-
-	get_online_cpus();
-	for_each_online_cpu(i) {
-		pr_debug("Updating policy for cpu%d\n", i);
-		cpufreq_update_policy(i);
-	}
-	put_online_cpus();
-
 	pr_debug("CPU:%d max limit:%lu\n", cpumask_first(&hw->core_map),
 			max_limit);
 	trace_lmh_dcvs_freq(cpumask_first(&hw->core_map), max_limit);
 
 notify_exit:
 	hw->hw_freq_limit = max_limit;
+	get_online_cpus();
+	cpufreq_update_policy(cpumask_first(&hw->core_map));
+	put_online_cpus();
 	return max_limit;
 }
 
@@ -723,7 +717,6 @@ probe_exit:
 	if (ret < 0)
 		goto unregister_sensor;
 	ret = 0;
-
 	return ret;
 
 unregister_sensor:
