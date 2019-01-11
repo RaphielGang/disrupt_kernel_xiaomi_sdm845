@@ -94,7 +94,7 @@
 			qcom,supply-max-voltage = <1800000>;
 			qcom,supply-enable-load = <62000>;
 			qcom,supply-disable-load = <80>;
-			qcom,supply-post-on-sleep = <2>;
+			qcom,supply-post-on-sleep = <1>;
 		};
 
 		qcom,panel-supply-entry@1 {
@@ -113,7 +113,6 @@
 			qcom,supply-max-voltage = <5500000>;
 			qcom,supply-enable-load = <100000>;
 			qcom,supply-disable-load = <100>;
-			qcom,supply-pre-off-sleep = <2>;
 		};
 	};
 
@@ -135,18 +134,18 @@
 		qcom,panel-supply-entry@1 {
 			reg = <2>;
 			qcom,supply-name = "lab";
-			qcom,supply-min-voltage = <5800000>;
-			qcom,supply-max-voltage = <5800000>;
+			qcom,supply-min-voltage = <5500000>;
+			qcom,supply-max-voltage = <5500000>;
 			qcom,supply-enable-load = <100000>;
 			qcom,supply-disable-load = <100>;
-			qcom,supply-post-on-sleep = <4>;
+			qcom,supply-post-on-sleep = <3>;
 		};
 
 		qcom,panel-supply-entry@2 {
 			reg = <3>;
 			qcom,supply-name = "ibb";
-			qcom,supply-min-voltage = <5800000>;
-			qcom,supply-max-voltage = <5800000>;
+			qcom,supply-min-voltage = <5500000>;
+			qcom,supply-max-voltage = <5500000>;
 			qcom,supply-enable-load = <100000>;
 			qcom,supply-disable-load = <100>;
 			qcom,supply-pre-off-sleep = <4>;
@@ -513,11 +512,14 @@
 
 	qcom,esd-check-enabled;
 	qcom,mdss-dsi-panel-status-check-mode = "reg_read";
-	qcom,mdss-dsi-panel-status-command = [06 01 00 01 00 00 01 0A];
+	qcom,mdss-dsi-panel-status-command = [
+						06 01 00 01 00 00 01 0A
+						06 01 00 01 00 00 01 0B
+						06 01 00 01 00 00 01 0D
+						];
 	qcom,mdss-dsi-panel-status-command-state = "dsi_hs_mode";
-	qcom,mdss-dsi-panel-status-value = <0x9c>;
-	qcom,mdss-dsi-panel-on-check-value = <0x9c>;
-	qcom,mdss-dsi-panel-status-read-length = <1>;
+	qcom,mdss-dsi-panel-status-value = <0x9c 0x00 0x00>;
+	qcom,mdss-dsi-panel-status-read-length = <1 1 1>;
 
 	qcom,mdss-dsi-display-timings {
 		timing@0{

@@ -177,8 +177,8 @@
 	status = "okay";
 	qcom,fs-curr-ua = <20000>;
 	qcom,led-strings-list = [00 01];
-	//qcom,ovp-mv = <19600>;
-	//qcom,en-cabc;
+	qcom,ovp-mv = <29600>;
+	qcom,en-cabc;
 	qcom,switch-freq-khz = <600>;
 };
 
