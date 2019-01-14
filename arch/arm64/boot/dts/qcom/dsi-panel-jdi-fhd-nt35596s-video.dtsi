@@ -31,7 +31,6 @@
 		qcom,mdss-dsi-traffic-mode = "burst_mode";
 		qcom,mdss-dsi-bllp-eof-power-mode;
 		qcom,mdss-dsi-bllp-power-mode;
-		qcom,mdss-dsi-lp11-init;
 		qcom,mdss-dsi-lane-0-state;
 		qcom,mdss-dsi-lane-1-state;
 		qcom,mdss-dsi-lane-2-state;
@@ -45,6 +44,9 @@
 		qcom,mdss-pan-physical-width-dimension = <68>;
 		qcom,mdss-pan-physical-height-dimension = <136>;
 		qcom,cont-splash-enabled;
+		qcom,ulps-enabled;
+		qcom,suspend-ulps-enabled;
+		qcom,panel-allow-phy-poweroff;
 		qcom,mdss-dsi-tx-eot-append;
 		qcom,mdss-panel-on-dimming-delay = <120>;
 		qcom,esd-err-irq-gpio = <&tlmm 52 0x2001>;
