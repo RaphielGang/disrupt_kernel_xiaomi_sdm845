@@ -84,31 +84,22 @@ KBUILD_CFLAGS	+=	$(call cc-option,-mllvm -polly,) \
 					$(call cc-option,-mllvm -polly-vectorizer=stripmine,) \
 					$(call cc-option,-mllvm -polly-detect-keep-going)
 
-KBUILD_CFLAGS	+=	$(call cc-option,-mcpu=kryo,) \
+KBUILD_CFLAGS	+=	$(call cc-option,-mcpu=cortex-a55,) \
 					$(call cc-option,-march=armv8.2-a,) \
-					$(call cc-option,-mtune=kryo,) \
-					$(call cc-option,-g0)
+					$(call cc-option,-mtune=cortex-a55,)
 
-KBUILD_AFLAGS	+=	$(call cc-option,-mcpu=kryo,) \
+KBUILD_AFLAGS	+=	$(call cc-option,-mcpu=cortex-a55,) \
 					$(call cc-option,-march=armv8.2-a,) \
-					$(call cc-option,-mtune=kryo,) \
-					$(call cc-option,-g0)
+					$(call cc-option,-mtune=cortex-a55,)
 else
 KBUILD_CFLAGS	+=	$(call cc-option,-mcpu=cortex-a75.cortex-a55,) \
 					$(call cc-option,-march=armv8.2-a,) \
-					$(call cc-option,-mtune=cortex-a75.cortex-a55,) \
-					$(call cc-option,-g0)
+					$(call cc-option,-mtune=cortex-a75.cortex-a55,)
 
 KBUILD_AFLAGS	+=	$(call cc-option,-mcpu=cortex-a75.cortex-a55,) \
 					$(call cc-option,-march=armv8.2-a,) \
-					$(call cc-option,-mtune=cortex-a75.cortex-a55,) \
-					$(call cc-option,-g0)
+					$(call cc-option,-mtune=cortex-a75.cortex-a55,)
 endif
-
-# Optimize our linker too
-KBUILD_LDFLAGS	+= $(call ld-option, -z combreloc,)
-KBUILD_LDFLAGS	+= $(call ld-option, --strip-debug,)
-KBUILD_LDFLAGS_vmlinux	+= $(call ld-option, --relax)
 
 CHECKFLAGS	+= -D__aarch64__
 
