@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
  * Copyright (C) 2018 XiaoMi, Inc.
  * Copyright (C) 2013 Red Hat
  * Author: Rob Clark <robdclark@gmail.com>
@@ -2076,6 +2076,9 @@ static int msm_pdev_probe(struct platform_device *pdev)
 	ret = add_bridge_components(&pdev->dev, &match);
 	if (ret)
 		return ret;
+
+	if (!match)
+		return -ENODEV;
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
 	return component_master_add_with_match(&pdev->dev, &msm_drm_ops, match);
