@@ -5984,7 +5984,8 @@ static void soc_monitor_work(struct work_struct *work)
 	if (rc < 0)
 		pr_err("failed to get battery temperature, rc=%d\n", rc);
 
-	fg_battery_soc_smooth_tracking(chip);
+	if (chip->soc_reporting_ready)
+		fg_battery_soc_smooth_tracking(chip);
 
 	pr_info("soc:%d, raw_soc:%d, c:%d, s:%d\n",
 				chip->param.batt_soc, chip->param.batt_raw_soc,
