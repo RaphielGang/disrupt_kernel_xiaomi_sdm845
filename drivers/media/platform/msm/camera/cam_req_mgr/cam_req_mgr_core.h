@@ -345,6 +345,7 @@ struct cam_req_mgr_core_link {
 	int64_t                              sync_self_ref;
 	bool                                 frame_skip_flag;
 	bool                                 sync_link_sof_skip;
+	int64_t                              sync_trigger_frame_id;
 	int32_t                              open_req_cnt;
 	int32_t                              num_sof_src;
 	struct cam_req_mgr_dev_sof_evt       dev_sof_evt[3];
