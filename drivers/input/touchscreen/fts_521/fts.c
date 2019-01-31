@@ -2202,7 +2202,7 @@ static ssize_t fts_doze_time_store(struct device *dev,
 	/*reg value * 10 represents of the num of frames ,one frame is about 8ms, the input value is ms*/
 	reg_val = (info->doze_time / 8 - 1) / 10;
 	cmd[3] = reg_val;
-	ret = fts_write(cmd, ARRAY_SIZE(cmd));
+	ret = fts_write(cmd, sizeof(cmd));
 	if (ret < OK) {
 		logError(1, "%s %s: write failed...ERROR %08X !\n", tag,
 			 __func__, ret);
@@ -2230,7 +2230,7 @@ static ssize_t fts_grip_enable_store(struct device *dev,
 	pr_info("%s,buf:%s,count:%zu\n", __func__, buf, count);
 	sscanf(buf, "%u", &info->grip_enabled);
 	cmd[2] = info->grip_enabled;
-	ret = fts_write(cmd, ARRAY_SIZE(cmd));
+	ret = fts_write(cmd, sizeof(cmd));
 	if (ret < OK) {
 		logError(1, "%s %s: write failed...ERROR %08X !\n", tag,
 			 __func__, ret);
@@ -2266,7 +2266,7 @@ static ssize_t fts_grip_area_store(struct device *dev,
 			return count;
 		}
 	}
-	ret = fts_write(cmd, ARRAY_SIZE(cmd));
+	ret = fts_write(cmd, sizeof(cmd));
 	if (ret < OK) {
 		logError(1, "%s %s: write failed...ERROR %08X !\n", tag,
 			 __func__, ret);
@@ -3729,18 +3729,18 @@ static int fts_mode_handler(struct fts_ts_info *info, int force)
 #endif
 #ifdef CONFIG_INPUT_PRESS_NDT
 		logError(1, "%s %s,send long press and gesture cmd\n", tag, __func__);
-		res = fts_write(gesture_cmd, ARRAY_SIZE(gesture_cmd));
+		res = fts_write(gesture_cmd, sizeof(gesture_cmd));
 		if (res < OK)
 				logError(1, "%s %s: enter gesture and longpress failed! ERROR %08X recovery in senseOff...\n",
 					 tag, __func__, res);
 		res = setScanMode(SCAN_MODE_LOW_POWER, 0);
 		res |= ret;
 		if (info->gesture_enabled == 1) {
-			res = fts_write(single_double_cmd, ARRAY_SIZE(single_double_cmd));
+			res = fts_write(single_double_cmd, sizeof(single_double_cmd));
 			if (res < OK)
 					logError(1, "%s %s: set single and double tap delay time failed! ERROR %08X\n", tag, __func__, res);
 		} else {
-			res = fts_write(single_only_cmd, ARRAY_SIZE(single_only_cmd));
+			res = fts_write(single_only_cmd, sizeof(single_only_cmd));
 			if (res < OK)
 					logError(1, "%s %s: set single only delay time failed! ERROR %08X\n", tag, __func__, res);
 		}
