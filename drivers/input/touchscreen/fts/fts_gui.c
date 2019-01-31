@@ -38,7 +38,7 @@ ssize_t fts_i2c_wr_show(struct device *dev, struct device_attribute *attr, char 
 	struct fts_ts_info *info = i2c_get_clientdata(client);
 	int i ;
 	char buff[16];
-	memset(Out_buff, 0x00, ARRAY_SIZE(Out_buff));
+	memset(Out_buff, 0x00, sizeof(Out_buff));
 
 	if (byte_count_read == 0) {
 		snprintf(Out_buff, sizeof(Out_buff), "{FAILED}");
@@ -58,7 +58,7 @@ ssize_t fts_i2c_wr_show(struct device *dev, struct device_attribute *attr, char 
 	printk("}\n");
 #endif
 	snprintf(buff, sizeof(buff), "{");
-	strlcat(Out_buff, buff,  ARRAY_SIZE(Out_buff));
+	strlcat(Out_buff, buff,  sizeof(Out_buff));
 
 	for (i = 0; i < (byte_count_read + 2); i++) {
 		if ((i == 0)) {
@@ -70,16 +70,16 @@ ssize_t fts_i2c_wr_show(struct device *dev, struct device_attribute *attr, char 
 		} else
 			snprintf(buff, sizeof(buff), "%02X", info->cmd_wr_result[i - 2]);
 
-		strlcat(Out_buff, buff,  ARRAY_SIZE(Out_buff));
+		strlcat(Out_buff, buff,  sizeof(Out_buff));
 
 		if (i < (byte_count_read + 1)) {
 			snprintf(buff, sizeof(buff), " ");
-			strlcat(Out_buff, buff,  ARRAY_SIZE(Out_buff));
+			strlcat(Out_buff, buff,  sizeof(Out_buff));
 		}
 	}
 
 	snprintf(buff, sizeof(buff), "}");
-	strlcat(Out_buff, buff,  ARRAY_SIZE(Out_buff));
+	strlcat(Out_buff, buff,  sizeof(Out_buff));
 	return snprintf(buf, PAGE_SIZE, "%s\n", Out_buff);
 }
 
@@ -92,8 +92,8 @@ ssize_t fts_i2c_wr_store(struct device *dev, struct device_attribute *attr, cons
 	unsigned int byte_count = 0;
 	int i;
 	unsigned int data[8] = {0};
-	memset(data, 0x00, ARRAY_SIZE(data));
-	memset(info->cmd_wr_result, 0x00, ARRAY_SIZE(info->cmd_wr_result));
+	memset(data, 0x00, sizeof(data));
+	memset(info->cmd_wr_result, 0x00, sizeof(info->cmd_wr_result));
 	sscanf(buf, "%x %x %x %x %x %x %x %x ", (data + 7), (data), (data + 1), (data + 2), (data + 3), (data + 4), (data + 5), (data + 6));
 	byte_count = data[7];
 #ifdef SCRIPTLESS_DEBUG
@@ -148,7 +148,7 @@ ssize_t fts_i2c_read_show(struct device *dev, struct device_attribute *attr, cha
 	struct fts_ts_info *info = i2c_get_clientdata(client);
 	int i ;
 	char buff[16];
-	memset(Out_buff, 0x00, ARRAY_SIZE(Out_buff));
+	memset(Out_buff, 0x00, sizeof(Out_buff));
 
 	if (byte_count_read == 0) {
 		snprintf(Out_buff, sizeof(Out_buff), "{FAILED}");
@@ -168,7 +168,7 @@ ssize_t fts_i2c_read_show(struct device *dev, struct device_attribute *attr, cha
 	printk("}\n");
 #endif
 	snprintf(buff, sizeof(buff), "{");
-	strlcat(Out_buff, buff, ARRAY_SIZE(Out_buff));
+	strlcat(Out_buff, buff, sizeof(Out_buff));
 
 	for (i = 0; i < (byte_count_read + 2); i++) {
 		if ((i == 0)) {
@@ -180,16 +180,16 @@ ssize_t fts_i2c_read_show(struct device *dev, struct device_attribute *attr, cha
 		} else
 			snprintf(buff, sizeof(buff), "%02X", info->cmd_read_result[i - 2]);
 
-		strlcat(Out_buff, buff,  ARRAY_SIZE(Out_buff));
+		strlcat(Out_buff, buff,  sizeof(Out_buff));
 
 		if (i < (byte_count_read + 1)) {
 			snprintf(buff, sizeof(buff), " ");
-			strlcat(Out_buff, buff, ARRAY_SIZE(Out_buff));
+			strlcat(Out_buff, buff, sizeof(Out_buff));
 		}
 	}
 
 	snprintf(buff, sizeof(buff), "}");
-	strlcat(Out_buff, buff,  ARRAY_SIZE(Out_buff));
+	strlcat(Out_buff, buff,  sizeof(Out_buff));
 	return snprintf(buf, PAGE_SIZE, "%s\n", Out_buff);
 }
 
@@ -203,8 +203,8 @@ ssize_t fts_i2c_read_store(struct device *dev, struct device_attribute *attr, co
 	int i ;
 	unsigned int data[8] = {0};
 	byte_count_read = 0;
-	memset(data, 0x00, ARRAY_SIZE(data));
-	memset(info->cmd_read_result, 0x00, ARRAY_SIZE(info->cmd_read_result));
+	memset(data, 0x00, sizeof(data));
+	memset(info->cmd_read_result, 0x00, sizeof(info->cmd_read_result));
 	sscanf(buf, "%x %x %x %x %x %x %x %x ", (data + 7), (data), (data + 1), (data + 2), (data + 3), (data + 4), (data + 5), (data + 6));
 	byte_count = data[7];
 
@@ -274,13 +274,13 @@ ssize_t fts_i2c_write_store(struct device *dev, struct device_attribute *attr, c
 	struct fts_ts_info *info = i2c_get_clientdata(client);
 	unsigned int byte_count = 0 ;
 	int i ;
-	memset(data, 0x00, ARRAY_SIZE(data));
-	memset(pAddress_i2c, 0x00, ARRAY_SIZE(pAddress_i2c));
-	memset(info->cmd_write_result, 0x00, ARRAY_SIZE(info->cmd_write_result));
+	memset(data, 0x00, sizeof(data));
+	memset(pAddress_i2c, 0x00, sizeof(pAddress_i2c));
+	memset(info->cmd_write_result, 0x00, sizeof(info->cmd_write_result));
 	sscanf(buf, "%x %x", data, (data + 1));
 	byte_count = data[0] << 8 | data[1];
 
-	if (byte_count <= ARRAY_SIZE(pAddress_i2c))
+	if (byte_count <= sizeof(pAddress_i2c))
 		for (i = 0; i < (byte_count); i++)
 			sscanf(&buf[3 * (i + 2)], "%x ", (data + i));
 	else {
