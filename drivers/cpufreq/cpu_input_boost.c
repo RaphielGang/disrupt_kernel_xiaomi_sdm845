@@ -8,14 +8,15 @@
 #include <linux/cpu.h>
 #include <linux/cpufreq.h>
 #include <linux/input.h>
+#include <linux/moduleparam.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/slab.h>
 
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
 static bool stune_boost_active;
 static int boost_slot;
-static unsigned short dynamic_stune_boost;
-module_param(dynamic_stune_boost, short, 0644);
+static int dynamic_stune_boost;
+module_param(dynamic_stune_boost, uint, 0644);
 #endif
 
 /* Available bits for boost_drv state */
