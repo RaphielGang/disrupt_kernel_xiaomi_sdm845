@@ -123,11 +123,46 @@
 						05 01 00 00 5A 00 02 10 00];
 				qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
 				qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
-				qcom,mdss-dsi-displayoff-command = [05 01 00 00 16 00 02 28 00];
-				qcom,mdss-dsi-displayon-command = [05 01 00 00 14 00 02 29 00];
-				qcom,mdss-dsi-displayoff-command-state = "dsi_hs_mode";
-				qcom,mdss-dsi-displayon-command-state = "dsi_hs_mode";
 				qcom,mdss-dsi-h-sync-pulse = <1>;
+
+				qcom,mdss-dsi-dispparam-cabcuion-command = [
+						15 01 00 00 00 00 02 55 01
+						15 01 00 00 00 00 02 91 00];
+				qcom,mdss-dsi-dispparam-cabcuion-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-cabcstillon-command = [
+						15 01 00 00 00 00 02 55 02
+						15 01 00 00 00 00 02 91 00];
+				qcom,mdss-dsi-dispparam-cabcstillon-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-cabcmovieon-command = [
+						15 01 00 00 00 00 02 55 03
+						15 01 00 00 00 00 02 91 00];
+				qcom,mdss-dsi-dispparam-cabcmovieon-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-cabcoff-command = [
+						15 01 00 00 01 00 02 55 00
+						15 01 00 00 00 00 02 91 00];
+				qcom,mdss-dsi-dispparam-cabcoff-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-dimmingon-command = [15 01 00 00 01 00 02 53 2C];
+				qcom,mdss-dsi-dispparam-dimmingon-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-ceon-command = [15 01 00 00 00 00 02 91 80];
+				qcom,mdss-dsi-dispparam-ceon-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-ceoff-command = [15 01 00 00 00 00 02 91 00];
+				qcom,mdss-dsi-dispparam-ceoff-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-skince-cabcuion-command = [
+					15 01 00 00 00 00 02 55 01
+					15 01 00 00 00 00 02 91 80];
+				qcom,mdss-dsi-dispparam-skince-cabcuion-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-skince-cabcstillon-command = [
+					15 01 00 00 00 00 02 55 02
+					15 01 00 00 00 00 02 91 80];
+				qcom,mdss-dsi-dispparam-skince-cabcstillon-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-skince-cabcmovieon-command = [
+					15 01 00 00 00 00 02 55 03
+					15 01 00 00 00 00 02 91 80];
+				qcom,mdss-dsi-dispparam-skince-cabcmovieon-command-state = "dsi_hs_mode";
+				qcom,mdss-dsi-dispparam-skince-cabcoff-command = [
+					15 01 00 00 01 00 02 55 00
+					15 01 00 00 00 00 02 91 80];
+				qcom,mdss-dsi-dispparam-skince-cabcoff-command-state = "dsi_hs_mode";
 			};
 		};
 	};
