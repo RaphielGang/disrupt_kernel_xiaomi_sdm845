@@ -721,16 +721,10 @@ static void __init smp_build_mpidr_hash(void)
  */
 struct proc_info_list *lookup_processor(u32 midr)
 {
-	struct proc_info_list *list = lookup_processor_type(midr);
+	struct proc_info_list *list;
 
-	/*
-	 * locate processor in the list of supported processor
-	 * types.  The linker builds this table for us from the
-	 * entries in arch/arm/mm/proc-*.S
-	 */
 	arm_init_bp_hardening();
-	list = lookup_processor_type(read_cpuid_id());
-
+	list = lookup_processor_type(midr);
 	if (!list) {
 		pr_err("CPU%u: configuration botched (ID %08x), CPU halted\n",
 		       smp_processor_id(), midr);
