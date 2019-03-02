@@ -350,7 +350,8 @@ static void get_config_work(struct work_struct *work)
 	return;
 
 reschedule:
-	schedule_delayed_work(&chip->get_config_work,
+	queue_delayed_work(system_freezable_wq,
+			&chip->get_config_work,
 			msecs_to_jiffies(GET_CONFIG_DELAY_MS));
 
 }
@@ -647,7 +648,8 @@ static int handle_battery_insertion(struct step_chg_info *chip)
 			 * Get config for the new inserted battery, delay
 			 * to make sure BMS has read out the batt_id.
 			 */
-			schedule_delayed_work(&chip->get_config_work,
+			queue_delayed_work(system_freezable_wq,
+				&chip->get_config_work,
 				msecs_to_jiffies(WAIT_BATT_ID_READY_MS));
 		}
 	}
@@ -699,7 +701,8 @@ static void status_change_work(struct work_struct *work)
 	if (reschedule_us == 0)
 		goto exit_work;
 	else
-		schedule_delayed_work(&chip->status_change_work,
+		queue_delayed_work(system_freezable_wq,
+				&chip->status_change_work,
 				usecs_to_jiffies(reschedule_us));
 	return;
 
@@ -719,14 +722,14 @@ static int step_chg_notifier_call(struct notifier_block *nb,
 	if ((strcmp(psy->desc->name, "battery") == 0)
 			|| (strcmp(psy->desc->name, "usb") == 0)) {
 		__pm_stay_awake(chip->step_chg_ws);
-		schedule_delayed_work(&chip->status_change_work, 0);
+		queue_delayed_work(system_freezable_wq, &chip->status_change_work, 0);
 	}
 
 	if ((strcmp(psy->desc->name, "bms") == 0)) {
 		if (chip->bms_psy == NULL)
 			chip->bms_psy = psy;
 		if (!chip->config_is_read)
-			schedule_delayed_work(&chip->get_config_work, 0);
+			queue_delayed_work(system_freezable_wq, &chip->get_config_work, 0);
 	}
 
 	return NOTIFY_OK;
@@ -804,7 +807,8 @@ int qcom_step_chg_init(struct device *dev,
 		goto release_wakeup_source;
 	}
 
-	schedule_delayed_work(&chip->get_config_work,
+	queue_delayed_work(system_freezable_wq,
+			&chip->get_config_work,
 			msecs_to_jiffies(GET_CONFIG_DELAY_MS));
 
 	the_chip = chip;
