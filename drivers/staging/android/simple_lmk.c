@@ -10,6 +10,7 @@
 #include <linux/oom.h>
 #include <linux/sched.h>
 #include <linux/simple_lmk.h>
+#include <linux/sort.h>
 
 #define MIN_FREE_PAGES (CONFIG_ANDROID_SIMPLE_LMK_MINFREE * SZ_1M / PAGE_SIZE)
 
@@ -24,9 +25,19 @@ enum {
 	READY
 };
 
+struct victim_info {
+	struct task_struct *victim;
+	unsigned long size;
+};
+
 /* Pulled from the Android framework */
 static const short int adj_prio[] = {
 	906, /* CACHED_APP_MAX_ADJ */
+	905, /* Cached app */
+	904, /* Cached app */
+	903, /* Cached app */
+	902, /* Cached app */
+	901, /* Cached app */
 	900, /* CACHED_APP_MIN_ADJ */
 	800, /* SERVICE_B_ADJ */
 	700, /* PREVIOUS_APP_ADJ */
@@ -45,18 +56,34 @@ static DEFINE_MUTEX(reclaim_lock);
 static struct workqueue_struct *simple_lmk_wq;
 static unsigned long last_reclaim_jiffies;
 static atomic_t simple_lmk_state = ATOMIC_INIT(DISABLED);
+static cputime_t kswapd_start_time;
+
+/* Make sure that PID_MAX_DEFAULT isn't too big, or these arrays will be huge */
+static struct victim_info victim_array[PID_MAX_DEFAULT];
+static struct victim_info *victim_ptr_array[ARRAY_SIZE(victim_array)];
 
 #define simple_lmk_is_ready() (atomic_read(&simple_lmk_state) == READY)
+
+static int victim_info_cmp(const void *lhs, const void *rhs)
+{
+	const struct victim_info **lhs_ptr = (typeof(lhs_ptr))lhs;
+	const struct victim_info **rhs_ptr = (typeof(rhs_ptr))rhs;
+
+	if ((*lhs_ptr)->size > (*rhs_ptr)->size)
+		return -1;
+
+	if ((*lhs_ptr)->size < (*rhs_ptr)->size)
+		return 1;
+
+	return 0;
+}
 
 static unsigned long scan_and_kill(int min_adj, int max_adj,
 				   unsigned long pages_needed)
 {
-	/* Boost priority of victim tasks so they can die quickly */
-	static const struct sched_param param = {
-		.sched_priority = MAX_RT_PRIO - 1
-	};
-	struct task_struct *tsk;
 	unsigned long pages_freed = 0;
+	unsigned int i, vcount = 0;
+	struct task_struct *tsk;
 
 	rcu_read_lock();
 	for_each_process(tsk) {
@@ -90,21 +117,45 @@ static unsigned long scan_and_kill(int min_adj, int max_adj,
 		if (!tasksize)
 			continue;
 
+		/* Store this potential victim away for later */
 		get_task_struct(victim);
-		if (do_send_sig_info(SIGKILL, SEND_SIG_FORCED, victim, true)) {
+		victim_array[vcount].victim = victim;
+		victim_array[vcount].size = tasksize;
+		victim_ptr_array[vcount] = &victim_array[vcount];
+		vcount++;
+
+		/* The victim array is so big that this should never happen */
+		if (unlikely(vcount == ARRAY_SIZE(victim_array)))
+			break;
+	}
+	rcu_read_unlock();
+
+	/* No potential victims for this adj range means no pages freed */
+	if (!vcount)
+		return 0;
+
+	/*
+	 * Sort the victims in descending order of size in order to kill as few
+	 * processes as possible while satisfying memory needs.
+	 */
+	sort(victim_ptr_array, vcount, sizeof(victim_ptr_array[0]),
+	     victim_info_cmp, NULL);
+
+	for (i = 0; i < vcount; i++) {
+		struct victim_info *vinfo = victim_ptr_array[i];
+		struct task_struct *victim = vinfo->victim;
+
+		if (pages_freed >= pages_needed) {
 			put_task_struct(victim);
 			continue;
 		}
 
-		victim->lmk_sigkill_sent = true;
-		sched_setscheduler_nocheck(victim, SCHED_FIFO, &param);
-		put_task_struct(victim);
+		if (!do_send_sig_info(SIGKILL, SEND_SIG_FORCED, victim, true))
+			victim->lmk_sigkill_sent = true;
 
-		pages_freed += tasksize;
-		if (pages_freed >= pages_needed)
-			break;
+		put_task_struct(victim);
+		pages_freed += vinfo->size;
 	}
-	rcu_read_unlock();
 
 	return pages_freed;
 }
@@ -125,19 +176,38 @@ static unsigned long do_lmk_reclaim(unsigned long pages_needed)
 	return pages_freed * PAGE_SIZE / SZ_1M;
 }
 
+static cputime_t get_kswapd_cputime(void)
+{
+	struct task_struct *kswapd = NODE_DATA(0)->kswapd;
+	cputime_t stime, unused;
+
+	task_cputime_adjusted(kswapd, &unused, &stime);
+	return stime;
+}
+
 static void simple_lmk_reclaim_work(struct work_struct *work)
 {
-	unsigned long mib_freed = 0;
+	unsigned long mib_freed, resched_delay_jiffies = 1;
+	cputime_t kswapd_time_now;
+	u64 delta_us;
+
+	/* Check kswapd's actual system run-time */
+	kswapd_time_now = get_kswapd_cputime();
+	delta_us = cputime_to_usecs(kswapd_time_now - kswapd_start_time);
+	if (delta_us / USEC_PER_MSEC < CONFIG_ANDROID_SIMPLE_LMK_KSWAPD_TIMEOUT)
+		goto reschedule;
+	kswapd_start_time = kswapd_time_now;
 
 	mutex_lock(&reclaim_lock);
-	if (time_after_eq(jiffies, last_reclaim_jiffies + KSWAPD_LMK_EXPIRES))
-		mib_freed = do_lmk_reclaim(MIN_FREE_PAGES);
+	mib_freed = do_lmk_reclaim(MIN_FREE_PAGES);
 	mutex_unlock(&reclaim_lock);
 
 	if (mib_freed)
 		pr_info("kswapd: freed %lu MiB\n", mib_freed);
 
-	queue_delayed_work(simple_lmk_wq, &reclaim_work, KSWAPD_LMK_EXPIRES);
+	resched_delay_jiffies = KSWAPD_LMK_EXPIRES;
+reschedule:
+	queue_delayed_work(simple_lmk_wq, &reclaim_work, resched_delay_jiffies);
 }
 
 void simple_lmk_one_reclaim(void)
@@ -164,6 +234,7 @@ void simple_lmk_start_reclaim(void)
 	if (!simple_lmk_is_ready())
 		return;
 
+	kswapd_start_time = get_kswapd_cputime();
 	queue_delayed_work(simple_lmk_wq, &reclaim_work, KSWAPD_LMK_EXPIRES);
 }
 
