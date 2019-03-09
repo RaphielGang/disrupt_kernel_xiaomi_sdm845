@@ -1562,7 +1562,7 @@ struct sched_statistics {
 };
 #endif
 
-#define RAVG_HIST_SIZE_MAX  8
+#define RAVG_HIST_SIZE_MAX  5
 #define NUM_BUSY_BUCKETS 10
 
 /* ravg represents frequency scaled cpu-demand of tasks */
