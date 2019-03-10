@@ -33,6 +33,34 @@ config ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
 	  /sys/module/lowmemorykiller/parameters/adj and convert them
 	  to oom_score_adj values.
 
+config ANDROID_SIMPLE_LMK
+	bool "Simple Android Low Memory Killer"
+	depends on !ANDROID_LOW_MEMORY_KILLER && !MEMCG
+	---help---
+	  This is a complete low memory killer solution for Android that is
+	  simple and effective. It is integrated deeply into the page allocator
+	  to know exactly when a page allocation hits OOM and exactly when a
+	  page is freed. Processes are killed according to the priorities that
+	  Android gives them; in other words, the least important processes are
+	  always killed first.
+
+if ANDROID_SIMPLE_LMK
+
+config ANDROID_SIMPLE_LMK_MINFREE
+	int "Minimum MiB of memory to free per reclaim"
+	default "64"
+	help
+	  Simple LMK will free at least this many MiB of memory per reclaim.
+
+config ANDROID_SIMPLE_LMK_KILL_TIMEOUT
+	int "Kill timeout in milliseconds"
+	default "50"
+	help
+	  Simple LMK will only perform memory reclaim at most once per this
+	  amount of time.
+
+endif
+
 config ANDROID_VSOC
 	tristate "Android Virtual SoC support"
 	default n
