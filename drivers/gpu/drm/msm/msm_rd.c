@@ -229,8 +229,12 @@ out:
 
 static int rd_release(struct inode *inode, struct file *file)
 {
-	struct msm_rd_state *rd = inode->i_private;
+	struct msm_rd_state *rd;
 
+	if (!inode || !inode->i_private)
+		return -EINVAL;
+
+	rd = inode->i_private;
 	rd->open = false;
 	wake_up_all(&rd->fifo_event);
 
