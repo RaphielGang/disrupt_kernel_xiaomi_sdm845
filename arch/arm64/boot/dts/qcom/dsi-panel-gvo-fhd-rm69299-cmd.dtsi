@@ -31,6 +31,7 @@
 		qcom,mdss-dsi-traffic-mode = "burst_mode";
 		qcom,mdss-dsi-bllp-eof-power-mode;
 		qcom,mdss-dsi-bllp-power-mode;
+		qcom,mdss-dsi-lp11-init;
 		qcom,ulps-enabled;
 		qcom,suspend-ulps-enabled;
 		qcom,panel-allow-phy-poweroff;
