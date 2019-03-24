@@ -1242,7 +1242,7 @@ int ipa3_add_rt_rule_after(struct ipa_ioc_add_rt_rule_after *rules)
 	tbl = __ipa3_find_rt_tbl(rules->ip, rules->rt_tbl_name);
 	if (tbl == NULL || (tbl->cookie != IPA_RT_TBL_COOKIE)) {
 		IPAERR_RL("failed finding rt tbl name = %s\n",
-			rules->rt_tbl_name ? rules->rt_tbl_name : "");
+			rules->rt_tbl_name);
 		ret = -EINVAL;
 		goto bail;
 	}
@@ -1570,9 +1570,7 @@ int ipa3_reset_rt(enum ipa_ip_type ip, bool user_only)
 					__ipa3_release_hdr_proc_ctx(
 						rule->proc_ctx->id);
 				rule->cookie = 0;
-				if (!rule->rule_id_valid)
-					idr_remove(tbl->rule_ids,
-						rule->rule_id);
+				idr_remove(tbl->rule_ids, rule->rule_id);
 				id = rule->id;
 				kmem_cache_free(ipa3_ctx->rt_rule_cache, rule);
 
