@@ -2109,8 +2109,8 @@ struct ctl_table random_table[] = {
 
 struct batched_entropy {
 	union {
-		unsigned long entropy_long[CHACHA_BLOCK_SIZE / sizeof(unsigned long)];
-		unsigned int entropy_int[CHACHA_BLOCK_SIZE / sizeof(unsigned int)];
+		u64 entropy_u64[CHACHA_BLOCK_SIZE / sizeof(u64)];
+		u32 entropy_u32[CHACHA_BLOCK_SIZE / sizeof(u32)];
 	};
 	unsigned int position;
 };
