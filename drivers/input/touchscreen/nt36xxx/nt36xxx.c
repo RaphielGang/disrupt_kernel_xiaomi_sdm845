@@ -1493,7 +1493,7 @@ static ssize_t tpdbg_write(struct file *file, const char __user *buf, size_t siz
 	cmd[size] = '\0';
 
 	if (!strncmp(cmd, "irq-disable", 11))
-		disable_irq(ts->client->irq);
+		disable_irq_nosync(ts->client->irq);
 	else if (!strncmp(cmd, "irq-enable", 10))
 		enable_irq(ts->client->irq);
 	else if (!strncmp(cmd, "tp-sd-en", 8))
@@ -1753,7 +1753,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 		NVT_LOG("int_trigger_type=%d\n", ts->int_trigger_type);
 
 #if WAKEUP_GESTURE
-		ret = request_irq(client->irq, nvt_ts_irq_handler, ts->int_trigger_type | IRQF_ONESHOT, client->name, ts);
+		ret = request_threaded_irq(client->irq, NULL, nvt_ts_irq_handler, ts->int_trigger_type | IRQF_ONESHOT, client->name, ts);
 #else
 		ret = request_irq(client->irq, nvt_ts_irq_handler, ts->int_trigger_type, client->name, ts);
 #endif
@@ -1761,7 +1761,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 			NVT_ERR("request irq failed. ret=%d\n", ret);
 			goto err_int_request_failed;
 		} else {
-			disable_irq(client->irq);
+			disable_irq_nosync(client->irq);
 			NVT_LOG("request irq %d succeed\n", client->irq);
 		}
 	}
