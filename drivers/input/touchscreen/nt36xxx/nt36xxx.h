@@ -31,7 +31,7 @@
 #define PINCTRL_STATE_ACTIVE		"pmx_ts_active"
 #define PINCTRL_STATE_SUSPEND		"pmx_ts_suspend"
 #define PINCTRL_STATE_RELEASE		"pmx_ts_release"
-
+#define NVT_COORDS_ARR_SIZE 2
 #define NVT_DEBUG 1
 
 /*---GPIO number---*/
@@ -74,7 +74,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 /*---Customerized func.---*/
 #define NVT_TOUCH_PROC 1
 #define NVT_TOUCH_EXT_PROC 1
-#define NVT_TOUCH_MP 1
+#define NVT_TOUCH_MP 0
 #define MT_PROTOCOL_B 1
 #define WAKEUP_GESTURE 1
 #if WAKEUP_GESTURE
@@ -155,9 +155,6 @@ struct nvt_ts_data {
 	struct completion dev_pm_suspend_completion;
 	struct work_struct resume_work;
 	struct workqueue_struct *event_wq;
-	bool tddi_tp_hw_reset;
-	bool gesture_enabled_when_resume;
-	bool gesture_disabled_when_resume;
 };
 
 struct nvt_mode_switch {
@@ -167,7 +164,7 @@ struct nvt_mode_switch {
 };
 
 #if NVT_TOUCH_PROC
-struct nvt_flash_data{
+struct nvt_flash_data {
 	rwlock_t lock;
 	struct i2c_client *client;
 };
