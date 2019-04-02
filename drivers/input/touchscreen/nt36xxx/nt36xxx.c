@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2010 - 2017 Novatek, Inc.
- * Copyright (C) 2018 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * $Revision: 20544 $
  * $Date: 2017-12-20 11:08:15 +0800 (週三, 20 十二月 2017) $
@@ -740,7 +740,7 @@ static int nvt_parse_dt(struct device *dev)
 
 	ts->reset_gpio = of_get_named_gpio_flags(np, "novatek,reset-gpio", 0, NULL);
 	NVT_LOG("novatek,reset-gpio=%d\n", ts->reset_gpio);
-
+	ts->tddi_tp_hw_reset = of_property_read_bool(np, "novatek,tddi-tp-hw-reset");
 	ts->reset_tddi = of_get_named_gpio_flags(np, "novatek,reset-tddi", 0, NULL);
 	NVT_LOG("novatek,reset-tddi=%d\n", ts->reset_tddi);
 
@@ -1066,14 +1066,11 @@ static void nvt_switch_mode_work(struct work_struct *work)
 	struct nvt_mode_switch *ms = container_of(work, struct nvt_mode_switch, switch_mode_work);
 	struct nvt_ts_data *data = ms->nvt_data;
 	unsigned char value = ms->mode;
-	char ch[64] = {0x0,};
 
-	if (value >= INPUT_EVENT_WAKUP_MODE_OFF && value <= INPUT_EVENT_WAKUP_MODE_ON) {
+	if (value >= INPUT_EVENT_WAKUP_MODE_OFF && value <= INPUT_EVENT_WAKUP_MODE_ON)
 		data->gesture_enabled = value - INPUT_EVENT_WAKUP_MODE_OFF;
-		snprintf(ch, sizeof(ch), "%s", data->gesture_enabled ? "enabled" : "disabled");
-	} else {
+	else
 		NVT_ERR("Does not support touch mode %d\n", value);
-	}
 
 	if (ms != NULL) {
 		kfree(ms);
@@ -1118,7 +1115,7 @@ Description:
 return:
 	n.a.
 *******************************************************/
-static void nvt_ts_work_func(struct work_struct *work)
+static void nvt_ts_work_func(void)
 {
 	int32_t ret = -1;
 	uint8_t point_data[POINT_DATA_LEN + 1] = {0};
@@ -1255,8 +1252,6 @@ static void nvt_ts_work_func(struct work_struct *work)
 	input_sync(ts->input_dev);
 
 XFER_ERROR:
-	enable_irq(ts->client->irq);
-
 	mutex_unlock(&ts->lock);
 }
 
@@ -1269,11 +1264,10 @@ return:
 *******************************************************/
 static irqreturn_t nvt_ts_irq_handler(int32_t irq, void *dev_id)
 {
-	disable_irq_nosync(ts->client->irq);
 	if (bTouchIsAwake == 0) {
 		dev_dbg(&ts->client->dev, "%s gesture wakeup\n", __func__);
 	}
-	queue_work(nvt_wq, &ts->nvt_work);
+	nvt_ts_work_func();
 
 	return IRQ_HANDLED;
 }
@@ -1675,7 +1669,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 		ret = -ENOMEM;
 		goto err_create_nvt_wq_failed;
 	}
-	INIT_WORK(&ts->nvt_work, nvt_ts_work_func);
+
 	/*---allocate input device---*/
 	ts->input_dev = input_allocate_device();
 	if (ts->input_dev == NULL) {
@@ -1987,7 +1981,7 @@ static int32_t nvt_ts_suspend(struct device *dev)
 #endif
 		NVT_LOG("Enabled touch wakeup gesture\n");
 	} else {
-		disable_irq(ts->client->irq);
+		disable_irq_nosync(ts->client->irq);
 		/*---write i2c command to enter "deep sleep mode"---*/
 		buf[0] = EVENT_MAP_HOST_CMD;
 		buf[1] = 0x11;
@@ -1998,7 +1992,7 @@ static int32_t nvt_ts_suspend(struct device *dev)
 
 			if (ret < 0) {
 				NVT_ERR("Failed to select %s pinstate %d\n",
-					PINCTRL_STATE_ACTIVE, ret);
+					PINCTRL_STATE_SUSPEND, ret);
 			}
 		} else {
 			NVT_ERR("Failed to init pinctrl\n");
@@ -2052,7 +2046,7 @@ static int32_t nvt_ts_resume(struct device *dev)
 	nvt_bootloader_reset();
 	nvt_check_fw_reset_state(RESET_STATE_REK);
 
-	if (!ts->gesture_enabled) {
+	if ((ts->gesture_enabled && ts->gesture_disabled_when_resume) || !ts->gesture_enabled_when_resume) {
 		enable_irq(ts->client->irq);
 
 		if (ts->ts_pinctrl) {
@@ -2086,6 +2080,8 @@ static void nvt_resume_work(struct work_struct *work)
 	struct nvt_ts_data *ts =
 		container_of(work, struct nvt_ts_data, resume_work);
 	nvt_ts_resume(&ts->client->dev);
+	ts->gesture_enabled_when_resume = false;
+	ts->gesture_disabled_when_resume = true;
 }
 
 #if defined(CONFIG_DRM)
@@ -2105,13 +2101,19 @@ static int drm_notifier_callback(struct notifier_block *self, unsigned long even
 				/*drm_dsi_ulps_enable(true);*/
 				/*drm_dsi_ulps_suspend_enable(true);*/
 			}
-			flush_workqueue(ts->event_wq);
 			nvt_ts_suspend(&ts->client->dev);
+			if (ts->tddi_tp_hw_reset && !ts->gesture_enabled) {
+				gpio_direction_output(ts->reset_gpio, 0);
+			}
 		} else if (*blank == DRM_BLANK_UNBLANK) {
 			if (ts->gesture_enabled) {
+				if (ts->tddi_tp_hw_reset)
+					gpio_direction_output(ts->reset_gpio, 0);
 				gpio_direction_output(ts->reset_tddi, 0);
 				msleep(15);
 				gpio_direction_output(ts->reset_tddi, 1);
+				if (ts->tddi_tp_hw_reset)
+					gpio_direction_output(ts->reset_gpio, 1);
 				msleep(20);
 			}
 		}
@@ -2124,8 +2126,11 @@ static int drm_notifier_callback(struct notifier_block *self, unsigned long even
 				/*drm_dsi_ulps_suspend_enable(false);*/
 				nvt_enable_reg(ts, false);
 			}
-			flush_workqueue(ts->event_wq);
-			queue_work(ts->event_wq, &ts->resume_work);
+			if (ts->tddi_tp_hw_reset && !ts->gesture_enabled) {
+				NVT_ERR("set tp reset high\n");
+				gpio_direction_output(ts->reset_gpio, 1);
+			}
+			nvt_ts_resume(&ts->client->dev);
 		}
 	}
 
