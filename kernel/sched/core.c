@@ -777,6 +777,10 @@ static inline void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
 		psi_dequeue(p, flags & DEQUEUE_SLEEP);
 	}
 	p->sched_class->dequeue_task(rq, p, flags);
+#ifdef CONFIG_SCHED_WALT
+	if (p == rq->ed_task)
+		early_detection_notify(rq, ktime_get_ns());
+#endif
 	trace_sched_enq_deq_task(p, 0, cpumask_bits(&p->cpus_allowed)[0]);
 }
 
@@ -2198,9 +2202,7 @@ out:
 	if (success && sched_predl) {
 		raw_spin_lock_irqsave(&cpu_rq(cpu)->lock, flags);
 		if (do_pl_notif(cpu_rq(cpu)))
-			cpufreq_update_util(cpu_rq(cpu),
-					    SCHED_CPUFREQ_WALT |
-					    SCHED_CPUFREQ_PL);
+			cpufreq_update_util(cpu_rq(cpu), SCHED_CPUFREQ_PL);
 		raw_spin_unlock_irqrestore(&cpu_rq(cpu)->lock, flags);
 	}
 
@@ -2322,7 +2324,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 	p->se.nr_migrations		= 0;
 	p->se.vruntime			= 0;
 	p->last_sleep_ts		= 0;
-	p->last_cpu_selected_ts		= 0;
+	p->last_cpu_deselected_ts	= 0;
 
 	INIT_LIST_HEAD(&p->se.group_node);
 #ifdef CONFIG_PACKAGE_RUNTIME_INFO
@@ -3242,7 +3244,6 @@ void scheduler_tick(void)
 	bool early_notif;
 	u32 old_load;
 	struct related_thread_group *grp;
-	unsigned int flag = 0;
 
 	sched_clock_tick();
 
@@ -3262,9 +3263,8 @@ void scheduler_tick(void)
 
 	early_notif = early_detection_notify(rq, wallclock);
 	if (early_notif)
-		flag = SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_EARLY_DET;
+		cpufreq_update_util(rq, SCHED_CPUFREQ_EARLY_DET);
 
-	cpufreq_update_util(rq, flag);
 	raw_spin_unlock(&rq->lock);
 
 	if (early_notif)
@@ -3626,6 +3626,7 @@ static void __sched notrace __schedule(bool preempt)
 
 	wallclock = sched_ktime_clock();
 	if (likely(prev != next)) {
+		prev->last_cpu_deselected_ts = wallclock;
 		if (!prev->on_rq)
 			prev->last_sleep_ts = wallclock;
 
@@ -6031,12 +6032,6 @@ int sched_isolate_cpu(int cpu)
 
 	cpumask_andnot(&avail_cpus, cpu_online_mask, cpu_isolated_mask);
 
-	/* We cannot isolate ALL cpus in the system */
-	if (cpumask_weight(&avail_cpus) == 1) {
-		ret_code = -EINVAL;
-		goto out;
-	}
-
 	if (!cpu_online(cpu)) {
 		ret_code = -EINVAL;
 		goto out;
@@ -6044,6 +6039,13 @@ int sched_isolate_cpu(int cpu)
 
 	if (++cpu_isolation_vote[cpu] > 1)
 		goto out;
+
+	/* We cannot isolate ALL cpus in the system */
+	if (cpumask_weight(&avail_cpus) == 1) {
+		--cpu_isolation_vote[cpu];
+		ret_code = -EINVAL;
+		goto out;
+	}
 
 	/*
 	 * There is a race between watchdog being enabled by hotplug and

@@ -365,10 +365,21 @@ static void update_task_cpu_cycles(struct task_struct *p, int cpu,
 		p->cpu_cycles = read_cycle_counter(cpu, wallclock);
 }
 
+static inline bool is_ed_enabled(void)
+{
+	return (walt_rotation_enabled || (sched_boost_policy() !=
+		SCHED_BOOST_NONE));
+}
+
 void clear_ed_task(struct task_struct *p, struct rq *rq)
 {
 	if (p == rq->ed_task)
 		rq->ed_task = NULL;
+}
+
+static inline bool is_ed_task(struct task_struct *p, u64 wallclock)
+{
+	return (wallclock - p->last_wake_ts >= EARLY_DETECTION_DURATION);
 }
 
 bool early_detection_notify(struct rq *rq, u64 wallclock)
@@ -378,15 +389,14 @@ bool early_detection_notify(struct rq *rq, u64 wallclock)
 
 	rq->ed_task = NULL;
 
-	if ((!walt_rotation_enabled && sched_boost_policy() ==
-			SCHED_BOOST_NONE) || !rq->cfs.h_nr_running)
+	if (!is_ed_enabled() || !rq->cfs.h_nr_running)
 		return 0;
 
 	list_for_each_entry(p, &rq->cfs_tasks, se.group_node) {
 		if (!loop_max)
 			break;
 
-		if (wallclock - p->last_wake_ts >= EARLY_DETECTION_DURATION) {
+		if (is_ed_task(p, wallclock)) {
 			rq->ed_task = p;
 			return 1;
 		}
@@ -897,9 +907,13 @@ void fixup_busy_time(struct task_struct *p, int new_cpu)
 		irq_work_queue(&walt_migration_irq_work);
 	}
 
-	if (p == src_rq->ed_task) {
-		src_rq->ed_task = NULL;
-		dest_rq->ed_task = p;
+	if (is_ed_enabled()) {
+		if (p == src_rq->ed_task) {
+			src_rq->ed_task = NULL;
+			dest_rq->ed_task = p;
+		} else if (is_ed_task(p, wallclock)) {
+			dest_rq->ed_task = p;
+		}
 	}
 
 done:
@@ -1673,6 +1687,13 @@ account_busy_for_task_demand(struct rq *rq, struct task_struct *p, int event)
 	 */
 	if (event == TASK_WAKE || (!SCHED_ACCOUNT_WAIT_TIME &&
 			 (event == PICK_NEXT_TASK || event == TASK_MIGRATE)))
+		return 0;
+
+	/*
+	 * The idle exit time is not accounted for the first task _picked_ up to
+	 * run on the idle CPU.
+	 */
+	if (event == PICK_NEXT_TASK && rq->curr == rq->idle)
 		return 0;
 
 	/*
@@ -3247,7 +3268,6 @@ void walt_irq_work(struct irq_work *irq_work)
 	struct rq *rq;
 	int cpu;
 	u64 wc, total_grp_load = 0;
-	int flag = SCHED_CPUFREQ_WALT;
 	bool is_migration = false;
 	int level = 0;
 
@@ -3293,16 +3313,16 @@ void walt_irq_work(struct irq_work *irq_work)
 
 	for_each_sched_cluster(cluster) {
 		for_each_cpu(cpu, &cluster->cpus) {
-			int nflag = flag;
+			int nflag = 0;
 
 			rq = cpu_rq(cpu);
 
 			if (is_migration) {
 				if (rq->notif_pending) {
-					nflag |= SCHED_CPUFREQ_INTERCLUSTER_MIG;
+					nflag = SCHED_CPUFREQ_INTERCLUSTER_MIG;
 					rq->notif_pending = false;
 				} else {
-					nflag |= SCHED_CPUFREQ_FORCE_UPDATE;
+					nflag = SCHED_CPUFREQ_FORCE_UPDATE;
 				}
 			}
 
