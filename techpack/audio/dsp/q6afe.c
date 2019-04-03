@@ -25,6 +25,7 @@
 #include <dsp/q6audio-v2.h>
 #include <ipc/apr_tal.h>
 #include "adsp_err.h"
+#include <dsp/apr_elliptic.h>
 
 #define WAKELOCK_TIMEOUT	5000
 enum {
@@ -365,6 +366,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 				return -EINVAL;
 		}
 		wake_up(&this_afe.wait[data->token]);
+	} else if (data->opcode == ULTRASOUND_OPCODE) {
+		if (data->payload != NULL)
+			elliptic_process_apr_payload(data->payload);
+		else
+			pr_err("[ELUS]: payload is invalid");
 	} else if (data->payload_size) {
 		uint32_t *payload;
 		uint16_t port_id = 0;
@@ -1092,6 +1098,17 @@ fail_cmd:
 	__func__, config.pdata.param_id, ret, src_port);
 	return ret;
 }
+
+/* ELUS Begin */
+afe_ultrasound_state_t elus_afe = {
+       .ptr_apr = &this_afe.apr,
+       .ptr_status = &this_afe.status,
+       .ptr_state = &this_afe.state,
+       .ptr_wait = this_afe.wait,
+       .timeout_ms = TIMEOUT_MS,
+};
+EXPORT_SYMBOL(elus_afe);
+/* ELUS End */
 
 static void afe_send_cal_spkr_prot_tx(int port_id)
 {
@@ -5634,6 +5651,7 @@ int afe_validate_port(u16 port_id)
 	case SLIMBUS_2_RX:
 	case SLIMBUS_2_TX:
 	case SLIMBUS_3_RX:
+	case SLIMBUS_3_TX:
 	case INT_BT_SCO_RX:
 	case INT_BT_SCO_TX:
 	case INT_BT_A2DP_RX:
