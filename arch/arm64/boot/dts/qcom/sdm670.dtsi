@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -357,7 +357,7 @@
 				1708800   139
 			>;
 			idle-cost-data = <
-				12 10 8 6
+				12 10 8 6 4
 			>;
 		};
 		CPU_COST_1: core-cost1 {
@@ -384,12 +384,12 @@
 				2611200   1400
 			>;
 			idle-cost-data = <
-				100 80 60 40
+				100 80 60 40 20
 			>;
 		};
 		CLUSTER_COST_0: cluster-cost0 {
 			busy-cost-data = <
-				 300000    5
+				 300000    6
 				 576000    7
 				 748800    8
 				 998400    9
@@ -400,7 +400,7 @@
 				1708800   19
 			>;
 			idle-cost-data = <
-				4 3 2 1
+				5 4 3 2 1
 			>;
 		};
 		CLUSTER_COST_1: cluster-cost1 {
@@ -427,7 +427,7 @@
 				2611200   140
 			>;
 			idle-cost-data = <
-				4 3 2 1
+				5 4 3 2 1
 			>;
 		};
 	};
@@ -666,7 +666,7 @@
 		clocks = <&clock_aop QDSS_CLK>;
 		clock-names = "core_clk";
 
-		qom,coresight-jtagmm-cpu = <&CPU1>;
+		qcom,coresight-jtagmm-cpu = <&CPU1>;
 	};
 
 	jtag_mm2: jtagmm@7240000 {
@@ -2493,75 +2493,75 @@
 		qcom,fastrpc-adsp-audio-pdr;
 		qcom,fastrpc-adsp-sensors-pdr;
 
-		qcom,msm_fastrpc_compute_cb1 {
+		msm_fastrpc_compute_cb1: qcom,msm_fastrpc_compute_cb1 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			iommus = <&apps_smmu 0x1421 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb2 {
+		msm_fastrpc_compute_cb2: qcom,msm_fastrpc_compute_cb2 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			iommus = <&apps_smmu 0x1422 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb3 {
+		msm_fastrpc_compute_cb3: qcom,msm_fastrpc_compute_cb3 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			iommus = <&apps_smmu 0x1423 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb4 {
+		msm_fastrpc_compute_cb4: qcom,msm_fastrpc_compute_cb4 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			iommus = <&apps_smmu 0x1424 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb5 {
+		msm_fastrpc_compute_cb5: qcom,msm_fastrpc_compute_cb5 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			iommus = <&apps_smmu 0x1425 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb6 {
+		msm_fastrpc_compute_cb6: qcom,msm_fastrpc_compute_cb6 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			iommus = <&apps_smmu 0x1426 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb7 {
+		msm_fastrpc_compute_cb7: qcom,msm_fastrpc_compute_cb7 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			qcom,secure-context-bank;
 			iommus = <&apps_smmu 0x1429 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb8 {
+		msm_fastrpc_compute_cb8: qcom,msm_fastrpc_compute_cb8 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "cdsprpc-smd";
 			qcom,secure-context-bank;
 			iommus = <&apps_smmu 0x142A 0x30>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb9 {
+		msm_fastrpc_compute_cb9: qcom,msm_fastrpc_compute_cb9 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "adsprpc-smd";
 			iommus = <&apps_smmu 0x1803 0x0>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb10 {
+		msm_fastrpc_compute_cb10: qcom,msm_fastrpc_compute_cb10 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "adsprpc-smd";
 			iommus = <&apps_smmu 0x1804 0x0>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb11 {
+		msm_fastrpc_compute_cb11: qcom,msm_fastrpc_compute_cb11 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "adsprpc-smd";
 			iommus = <&apps_smmu 0x1805 0x0>;
 			dma-coherent;
 		};
-		qcom,msm_fastrpc_compute_cb12 {
+		msm_fastrpc_compute_cb12: qcom,msm_fastrpc_compute_cb12 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
 			label = "adsprpc-smd";
 			iommus = <&apps_smmu 0x1806 0x0>;

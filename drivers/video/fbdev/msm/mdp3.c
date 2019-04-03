@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2019, The Linux Foundation. All rights reserved.
  * Copyright (C) 2007 Google Incorporated
  *
  * This software is licensed under the terms of the GNU General Public
@@ -916,17 +916,6 @@ u64 mdp3_get_panic_lut_cfg(u32 panel_width)
 	return panic_config;
 }
 
-int mdp3_enable_panic_ctrl(void)
-{
-	int rc = 0;
-
-	if (MDP3_REG_READ(MDP3_PANIC_ROBUST_CTRL) == 0) {
-		pr_err("%s: Enable Panic Control\n", __func__);
-		MDP3_REG_WRITE(MDP3_PANIC_ROBUST_CTRL, BIT(0));
-	}
-	return rc;
-}
-
 int mdp3_qos_remapper_setup(struct mdss_panel_data *panel)
 {
 	int rc = 0;
@@ -1821,7 +1810,8 @@ static int mdp3_continuous_splash_on(struct mdss_panel_data *pdata)
 		pr_err("invalid bus handle %d\n", bus_handle->handle);
 		return -EINVAL;
 	}
-	mdp3_calc_dma_res(panel_info, &mdp_clk_rate, &ab, &ib, panel_info->bpp);
+	mdp3_calc_dma_res(panel_info, &mdp_clk_rate, &ab,
+					&ib, MAX_BPP_SUPPORTED);
 
 	mdp3_clk_set_rate(MDP3_CLK_VSYNC, MDP_VSYNC_CLK_RATE,
 			MDP3_CLIENT_DMA_P);
@@ -1996,6 +1986,7 @@ static int mdp3_debug_init(struct platform_device *pdev)
 	mdata->debug_inf.debug_enable_clock = mdp3_debug_enable_clock;
 	mdata->mdp_rev = mdp3_res->mdp_rev;
 	mdata->pdev = pdev;
+
 	rc = mdss_debugfs_init(mdata);
 	if (rc)
 		return rc;

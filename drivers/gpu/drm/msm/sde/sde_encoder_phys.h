@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2019 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -255,6 +255,7 @@ struct sde_encoder_irq {
  * @enc_spinlock:	Virtual-Encoder-Wide Spin Lock for IRQ purposes
  * @enable_state:	Enable state tracking
  * @vblank_refcount:	Reference count of vblank request
+ * @wbirq_refcount:	Reference count of wb irq request
  * @vsync_cnt:		Vsync count for the physical encoder
  * @underrun_cnt:	Underrun count for the physical encoder
  * @pending_kickoff_cnt:	Atomic counter tracking the number of kickoffs
@@ -293,6 +294,7 @@ struct sde_encoder_phys {
 	enum sde_enc_enable_state enable_state;
 	struct mutex *vblank_ctl_lock;
 	atomic_t vblank_refcount;
+	atomic_t wbirq_refcount;
 	atomic_t vsync_cnt;
 	atomic_t underrun_cnt;
 	atomic_t pending_ctlstart_cnt;
@@ -543,6 +545,12 @@ static inline enum sde_3d_blend_mode sde_encoder_helper_get_3d_blend_mode(
 	if (phys_enc->split_role == ENC_ROLE_SOLO &&
 			(topology == SDE_RM_TOPOLOGY_DUALPIPE_3DMERGE ||
 			 topology == SDE_RM_TOPOLOGY_DUALPIPE_3DMERGE_DSC))
+		return BLEND_3D_H_ROW_INT;
+
+	if ((phys_enc->split_role == ENC_ROLE_MASTER ||
+		phys_enc->split_role == ENC_ROLE_SLAVE) &&
+		 ((topology == SDE_RM_TOPOLOGY_QUADPIPE_3DMERGE) ||
+		 (topology == SDE_RM_TOPOLOGY_QUADPIPE_3DMERGE_DSC)))
 		return BLEND_3D_H_ROW_INT;
 
 	return BLEND_3D_NONE;

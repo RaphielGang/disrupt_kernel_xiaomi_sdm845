@@ -2347,10 +2347,6 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
 #endif
 
-#ifdef CONFIG_CPU_FREQ_TIMES
-	cpufreq_task_times_init(p);
-#endif
-
 	RB_CLEAR_NODE(&p->dl.rb_node);
 	init_dl_task_timer(&p->dl);
 	__dl_clear_params(p);
@@ -4335,9 +4331,9 @@ static int __sched_setscheduler(struct task_struct *p,
 	int queue_flags = DEQUEUE_SAVE | DEQUEUE_MOVE;
 	struct rq *rq;
 
-	/* may grab non-irq protected spin_locks */
-	if (pi)
-		BUG_ON(in_interrupt());
+	/* The pi code expects interrupts enabled */
+	BUG_ON(pi && in_interrupt());
+
 recheck:
 	/* double check policy once rq lock held */
 	if (policy < 0) {
@@ -5021,6 +5017,9 @@ again:
 	} else {
 		retval = -EINVAL;
 	}
+
+	if (!retval && !(p->flags & PF_KTHREAD))
+		cpumask_and(&p->cpus_requested, in_mask, cpu_possible_mask);
 
 out_free_new_mask:
 	free_cpumask_var(new_mask);
@@ -8149,6 +8148,7 @@ void __init sched_init_smp(void)
 	/* Move init over to a non-isolated CPU */
 	if (set_cpus_allowed_ptr(current, non_isolated_cpus) < 0)
 		BUG();
+	cpumask_copy(&current->cpus_requested, cpu_possible_mask);
 	sched_init_granularity();
 	free_cpumask_var(non_isolated_cpus);
 

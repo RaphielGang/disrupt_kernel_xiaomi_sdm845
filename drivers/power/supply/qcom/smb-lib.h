@@ -434,6 +434,7 @@ struct smb_charger {
 	int			qc2_max_pulses;
 	bool			non_compliant_chg_detected;
 	bool			fake_usb_insertion;
+	bool			reddragon_ipc_wa;
 	bool			ignore_recheck_flag;
 	bool			check_vbus_once;
 	bool			unstandard_hvdcp;

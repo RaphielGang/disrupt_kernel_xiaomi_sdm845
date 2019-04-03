@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -62,6 +62,11 @@
 	status = "disabled";
 };
 
+&qcom_seecom {
+	reg = <0x86d00000 0x800000>;
+	/delete-property/ qcom,appsbl-qseecom-support;
+};
+
 &sp_mem {
 	status = "disabled";
 };
@@ -82,6 +87,10 @@
 
 &ipa_hw {
 	status = "disabled";
+};
+
+&sde_dp {
+	qcom,max-pclk-frequency-khz = <675000>;
 };
 
 &mem_dump {
@@ -115,6 +124,23 @@
 				temperature = <100000>;
 			};
 		};
+	};
+
+	pop-mem-step {
+		status = "disabled";
+	};
+
+	xo-therm-step {
+		status = "disabled";
+	};
+
+	xo-therm-605-step {
+		polling-delay-passive = <2000>;
+		polling-delay = <0>;
+		thermal-sensors = <&pm660_adc_tm 0x4c>;
+		wake-capable-sensor;
+		thermal-governor = "step_wise";
+		status = "ok";
 	};
 };
 
@@ -392,4 +418,12 @@
 			};
 		};
 	};
+};
+
+&apps_smmu {
+	/delete-property/ qcom,actlr;
+};
+
+&kgsl_smmu {
+	/delete-property/qcom,deferred-regulator-disable-delay;
 };

@@ -1838,7 +1838,7 @@ static int _smblib_vbus_regulator_enable(struct regulator_dev *rdev)
 
 	smblib_dbg(chg, PR_OTG, "enabling OTG\n");
 
-	if (chg->wa_flags & OTG_WA) {
+	if ((chg->wa_flags & OTG_WA) && (!chg->reddragon_ipc_wa)) {
 		rc = smblib_enable_otg_wa(chg);
 		if (rc < 0)
 			smblib_err(chg, "Couldn't enable OTG rc=%d\n", rc);
@@ -3583,6 +3583,7 @@ static int __smblib_set_prop_pd_active(struct smb_charger *chg, bool pd_active)
 
 	chg->pd_active = pd_active;
 	if (chg->pd_active) {
+		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_PD;
 		vote(chg->apsd_disable_votable, PD_VOTER, true, 0);
 		vote(chg->pd_allowed_votable, PD_VOTER, true, 0);
 		vote(chg->usb_irq_enable_votable, PD_VOTER, true, 0);

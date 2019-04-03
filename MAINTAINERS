@@ -11482,6 +11482,7 @@ F:	arch/alpha/kernel/srm_env.c
 
 STABLE BRANCH
 M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+M:	Sasha Levin <sashal@kernel.org>
 L:	stable@vger.kernel.org
 S:	Supported
 F:	Documentation/stable_kernel_rules.txt
@@ -13056,6 +13057,7 @@ S:	Maintained
 F:	Documentation/devicetree/bindings/watchdog/
 F:	Documentation/watchdog/
 F:	drivers/watchdog/
+F:	drivers/watchdog/qcom-vm-wdt.c
 F:	include/linux/watchdog.h
 F:	include/uapi/linux/watchdog.h
 

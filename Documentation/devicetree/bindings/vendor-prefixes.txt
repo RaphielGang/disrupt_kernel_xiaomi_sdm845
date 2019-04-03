@@ -319,5 +319,6 @@ zarlink	Zarlink Semiconductor
 zii	Zodiac Inflight Innovations
 zte	ZTE Corp.
 zyxel	ZyXEL Communications Corp.
+inven   InvenSense, Inc.
 ssp Bcm4775
 ssp,bcm4775 broadcom 4775 gps chip

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2019, The Linux Foundation. All rights reserved.
  * Copyright (C) 2013 Red Hat
  * Author: Rob Clark <robdclark@gmail.com>
  *
@@ -1406,6 +1406,9 @@ static int _sde_encoder_dsc_setup(struct sde_encoder_virt *sde_enc,
 		return -EINVAL;
 	}
 
+	params->num_channels =
+		sde_rm_get_topology_num_encoders(topology);
+
 	SDE_DEBUG_ENC(sde_enc, "topology:%d\n", topology);
 	SDE_EVT32(DRMID(&sde_enc->base), topology,
 			sde_enc->cur_conn_roi.x,
@@ -1432,6 +1435,7 @@ static int _sde_encoder_dsc_setup(struct sde_encoder_virt *sde_enc,
 		ret = _sde_encoder_dsc_2_lm_2_enc_1_intf(sde_enc, params);
 		break;
 	case SDE_RM_TOPOLOGY_DUALPIPE_DSC:
+	case SDE_RM_TOPOLOGY_QUADPIPE_3DMERGE_DSC:
 		ret = _sde_encoder_dsc_2_lm_2_enc_2_intf(sde_enc, params);
 		break;
 	default:
@@ -1454,7 +1458,7 @@ static void _sde_encoder_update_vsync_source(struct sde_encoder_virt *sde_enc,
 	struct msm_mode_info mode_info;
 	int i, rc = 0;
 
-	if (!sde_enc || !disp_info) {
+	if (!sde_enc || !sde_enc->cur_master || !disp_info) {
 		SDE_ERROR("invalid param sde_enc:%d or disp_info:%d\n",
 					sde_enc != NULL, disp_info != NULL);
 		return;
@@ -2708,6 +2712,21 @@ void sde_encoder_virt_restore(struct drm_encoder *drm_enc)
 	_sde_encoder_virt_enable_helper(drm_enc);
 }
 
+static void sde_encoder_off_work(struct kthread_work *work)
+{
+	struct sde_encoder_virt *sde_enc = container_of(work,
+			struct sde_encoder_virt, delayed_off_work.work);
+	struct drm_encoder *drm_enc;
+
+	if (!sde_enc) {
+		SDE_ERROR("invalid sde encoder\n");
+		return;
+	}
+	drm_enc = &sde_enc->base;
+
+	sde_encoder_idle_request(drm_enc);
+}
+
 static void sde_encoder_virt_enable(struct drm_encoder *drm_enc)
 {
 	struct sde_encoder_virt *sde_enc = NULL;
@@ -2767,6 +2786,11 @@ static void sde_encoder_virt_enable(struct drm_encoder *drm_enc)
 		else
 			sde_enc->input_handler_registered = true;
 	}
+
+	if (!(msm_is_mode_seamless_vrr(cur_mode)
+			|| msm_is_mode_seamless_dms(cur_mode)))
+		kthread_init_delayed_work(&sde_enc->delayed_off_work,
+			sde_encoder_off_work);
 
 	ret = sde_encoder_resource_control(drm_enc, SDE_ENC_RC_EVENT_KICKOFF);
 	if (ret) {
@@ -3092,21 +3116,6 @@ int sde_encoder_idle_request(struct drm_encoder *drm_enc)
 						SDE_ENC_RC_EVENT_ENTER_IDLE);
 
 	return 0;
-}
-
-static void sde_encoder_off_work(struct kthread_work *work)
-{
-	struct sde_encoder_virt *sde_enc = container_of(work,
-			struct sde_encoder_virt, delayed_off_work.work);
-	struct drm_encoder *drm_enc;
-
-	if (!sde_enc) {
-		SDE_ERROR("invalid sde encoder\n");
-		return;
-	}
-	drm_enc = &sde_enc->base;
-
-	sde_encoder_idle_request(drm_enc);
 }
 
 /**
@@ -4119,7 +4128,8 @@ int sde_encoder_helper_reset_mixers(struct sde_encoder_phys *phys_enc,
 		/* only enable border color on LM */
 		if (phys_enc->hw_ctl->ops.setup_blendstage)
 			phys_enc->hw_ctl->ops.setup_blendstage(
-					phys_enc->hw_ctl, hw_lm->idx, NULL);
+					phys_enc->hw_ctl, hw_lm->cfg.flags,
+					hw_lm->idx, NULL);
 	}
 
 	if (!lm_valid) {
