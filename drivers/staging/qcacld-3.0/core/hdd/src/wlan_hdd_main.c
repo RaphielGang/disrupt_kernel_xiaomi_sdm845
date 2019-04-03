@@ -2000,51 +2000,62 @@ static int hdd_mon_open(struct net_device *dev)
 static QDF_STATUS
 wlan_hdd_update_dbs_scan_and_fw_mode_config(void)
 {
-		struct sir_dual_mac_config cfg = {0};
-		QDF_STATUS status;
-		uint32_t channel_select_logic_conc;
-		hdd_context_t *hdd_ctx;
+	struct sir_dual_mac_config cfg = {0};
+	QDF_STATUS status;
+	uint32_t chnl_sel_logic_conc = 0, dbs_disable;
+	hdd_context_t *hdd_ctx;
 
-		hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
-		if (!hdd_ctx) {
-			hdd_err("HDD context is NULL");
-			return QDF_STATUS_E_FAILURE;
-		}
-		if (!wma_is_hw_dbs_capable())
-			return QDF_STATUS_SUCCESS;
+	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+	if (!hdd_ctx) {
+		hdd_err("HDD context is NULL");
+		return QDF_STATUS_E_FAILURE;
+	}
 
-		cfg.scan_config = 0;
-		cfg.fw_mode_config = 0;
-		cfg.set_dual_mac_cb = cds_soc_set_dual_mac_cfg_cb;
+	/*
+	 * ROME platform doesn't support any DBS related commands in FW,
+	 * so if driver sends wmi command with dual_mac_config with all set to
+	 * 0 then FW wouldn't respond back and driver would timeout on waiting
+	 * for response. Check if FW supports DBS to eliminate ROME vs
+	 * NON-ROME platform.
+	 */
+	if (!wma_find_if_fw_supports_dbs())
+		return QDF_STATUS_SUCCESS;
 
-		channel_select_logic_conc = hdd_ctx->config->
-						channel_select_logic_conc;
+	cfg.scan_config = 0;
+	cfg.fw_mode_config = 0;
+	cfg.set_dual_mac_cb = cds_soc_set_dual_mac_cfg_cb;
 
-		if (hdd_ctx->config->dual_mac_feature_disable !=
-		    DISABLE_DBS_CXN_AND_SCAN) {
-			status = wma_get_updated_scan_and_fw_mode_config(
-				 &cfg.scan_config, &cfg.fw_mode_config,
-				 hdd_ctx->config->dual_mac_feature_disable,
-				 channel_select_logic_conc);
+	if (wma_is_hw_dbs_capable())
+		chnl_sel_logic_conc =
+			hdd_ctx->config->channel_select_logic_conc;
 
-			if (status != QDF_STATUS_SUCCESS) {
-				hdd_err("wma_get_updated_scan_and_fw_mode_config failed %d",
-					status);
-				return status;
-			}
-		}
+	dbs_disable = hdd_ctx->config->dual_mac_feature_disable;
+	if (hdd_ctx->config->dual_mac_feature_disable !=
+	    DISABLE_DBS_CXN_AND_SCAN) {
+		status =
+		wma_get_updated_scan_and_fw_mode_config(&cfg.scan_config,
+							&cfg.fw_mode_config,
+							dbs_disable,
+							chnl_sel_logic_conc);
 
-		hdd_debug("send scan_cfg: 0x%x fw_mode_cfg: 0x%x to fw",
-			  cfg.scan_config, cfg.fw_mode_config);
-
-		status = sme_soc_set_dual_mac_config(hdd_ctx->hHal, cfg);
 		if (status != QDF_STATUS_SUCCESS) {
-			hdd_err("sme_soc_set_dual_mac_config failed %d",
+			hdd_err("can't get updated scan and fw cfg status:%d",
 				status);
 			return status;
 		}
+	}
 
-		return QDF_STATUS_SUCCESS;
+	hdd_debug("send scan_cfg: 0x%x fw_mode_cfg: 0x%x to fw",
+		  cfg.scan_config, cfg.fw_mode_config);
+
+	status = sme_soc_set_dual_mac_config(hdd_ctx->hHal, cfg);
+	if (status != QDF_STATUS_SUCCESS) {
+		hdd_err("sme_soc_set_dual_mac_config failed %d",
+			status);
+		return status;
+	}
+
+	return QDF_STATUS_SUCCESS;
 }
 /**
  * hdd_start_adapter() - Wrapper function for device specific adapter
@@ -2683,13 +2694,6 @@ static int __hdd_stop(struct net_device *dev)
 
 	/* Make sure the interface is marked as closed */
 	clear_bit(DEVICE_IFACE_OPENED, &adapter->event_flags);
-
-	/*
-	 * Upon wifi turn off, DUT has to flush the scan results so if
-	 * this is the last cli iface, flush the scan database.
-	 */
-	if (!hdd_is_cli_iface_up(hdd_ctx))
-		sme_scan_flush_result(hdd_ctx->hHal);
 
 	/*
 	 * Find if any iface is up. If any iface is up then can't put device to
@@ -7392,6 +7396,7 @@ static void hdd_bus_bw_compute_cbk(void *priv)
 {
 	hdd_context_t *hdd_ctx = (hdd_context_t *)priv;
 	hdd_adapter_t *adapter = NULL;
+	hdd_adapter_t *sap_adapter = NULL;
 	uint64_t tx_packets = 0, rx_packets = 0;
 	uint64_t fwd_tx_packets = 0, fwd_rx_packets = 0;
 	uint64_t fwd_tx_packets_diff = 0, fwd_rx_packets_diff = 0;
@@ -7434,6 +7439,9 @@ static void hdd_bus_bw_compute_cbk(void *priv)
 
 			continue;
 		}
+
+		if (adapter->device_mode == QDF_SAP_MODE)
+			sap_adapter = adapter;
 
 		tx_packets += HDD_BW_GET_DIFF(adapter->stats.tx_packets,
 					      adapter->prev_tx_packets);
@@ -7484,8 +7492,10 @@ static void hdd_bus_bw_compute_cbk(void *priv)
 		tx_packets += (uint64_t)ipa_tx_packets;
 		rx_packets += (uint64_t)ipa_rx_packets;
 
-		adapter->stats.tx_packets += ipa_tx_packets;
-		adapter->stats.rx_packets += ipa_rx_packets;
+		if (sap_adapter) {
+			sap_adapter->stats.tx_packets += ipa_tx_packets;
+			sap_adapter->stats.rx_packets += ipa_rx_packets;
+		}
 
 		hdd_ipa_set_perf_level(hdd_ctx, tx_packets, rx_packets);
 		hdd_ipa_uc_stat_request(hdd_ctx, 2);
@@ -8906,6 +8916,8 @@ static hdd_context_t *hdd_context_create(struct device *dev)
 
 	wlan_logging_set_log_to_console(hdd_ctx->config->wlanLoggingToConsole);
 	wlan_logging_set_active(hdd_ctx->config->wlanLoggingEnable);
+
+	hdd_ctx->is_ssr_in_progress = false;
 
 	/*
 	 * Update QDF trace levels based upon the code. The multicast
@@ -13366,28 +13378,6 @@ void hdd_drv_ops_inactivity_handler(unsigned long arg)
 	}
 
 	cds_trigger_recovery(false);
-}
-
-bool hdd_is_cli_iface_up(hdd_context_t *hdd_ctx)
-{
-	hdd_adapter_list_node_t *adapter_node = NULL, *next = NULL;
-	hdd_adapter_t *adapter;
-	QDF_STATUS status;
-
-	status = hdd_get_front_adapter(hdd_ctx, &adapter_node);
-	while (NULL != adapter_node && QDF_STATUS_SUCCESS == status) {
-		adapter = adapter_node->pAdapter;
-		if ((adapter->device_mode == QDF_STA_MODE ||
-		     adapter->device_mode == QDF_P2P_CLIENT_MODE) &&
-		    qdf_atomic_test_bit(DEVICE_IFACE_OPENED,
-					&adapter->event_flags)){
-			return true;
-		}
-		status = hdd_get_next_adapter(hdd_ctx, adapter_node, &next);
-		adapter_node = next;
-	}
-
-	return false;
 }
 
 /* Register the module init/exit functions */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -3089,15 +3089,19 @@ static QDF_STATUS sme_process_nss_update_resp(tpAniSirGlobal mac, uint8_t *msg)
 	tSmeCmd *command = NULL;
 	bool found;
 	nss_update_cb callback = NULL;
-	struct sir_beacon_tx_complete_rsp *param;
+	struct sir_bcn_update_rsp *param;
 
-	param = (struct sir_beacon_tx_complete_rsp *)msg;
+	param = (struct sir_bcn_update_rsp *)msg;
 	if (!param)
 		sme_err("nss update resp param is NULL");
 		/* Not returning. Need to check if active command list
 		 * needs to be freed
 		 */
 
+	if (param && param->reason != REASON_NSS_UPDATE) {
+		sme_err("reason not NSS update");
+		return QDF_STATUS_E_INVAL;
+	}
 	entry = csr_ll_peek_head(&mac->sme.smeCmdActiveList,
 			LL_ACCESS_LOCK);
 	if (!entry) {
@@ -3122,8 +3126,8 @@ static QDF_STATUS sme_process_nss_update_resp(tpAniSirGlobal mac, uint8_t *msg)
 			sme_err("Callback failed since nss update params is NULL");
 		else
 			callback(command->u.nss_update_cmd.context,
-				param->tx_status,
-				param->session_id,
+				param->status,
+				param->vdev_id,
 				command->u.nss_update_cmd.next_action,
 				command->u.nss_update_cmd.reason);
 	} else
@@ -7421,6 +7425,26 @@ uint8_t sme_get_concurrent_operation_channel(tHalHandle hHal)
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
 			"%s: Other Concurrent Channel: %d", __func__, channel);
 		sme_release_global_lock(&pMac->sme);
+	}
+
+	return channel;
+}
+
+uint8_t sme_get_beaconing_concurrent_operation_channel(tHalHandle hal,
+						       uint8_t vdev_id_to_skip)
+{
+	QDF_STATUS status = QDF_STATUS_E_FAILURE;
+	tpAniSirGlobal mac = PMAC_STRUCT(hal);
+	uint8_t channel = 0;
+
+	status = sme_acquire_global_lock(&mac->sme);
+	if (QDF_IS_STATUS_SUCCESS(status)) {
+
+		channel = csr_get_beaconing_concurrent_channel(mac,
+							       vdev_id_to_skip);
+		sme_info("Other Concurrent Channel: %d skipped vdev_id %d",
+			 channel, vdev_id_to_skip);
+		sme_release_global_lock(&mac->sme);
 	}
 
 	return channel;
@@ -13938,7 +13962,7 @@ QDF_STATUS sme_update_dsc_pto_up_mapping(tHalHandle hHal,
 				&& (pSession->QosMapSet.dscp_range[i][1] ==
 							255)) {
 				QDF_TRACE(QDF_MODULE_ID_SME,
-					QDF_TRACE_LEVEL_ERROR,
+					QDF_TRACE_LEVEL_DEBUG,
 					FL("User Priority %d isn't used"), i);
 				break;
 			}

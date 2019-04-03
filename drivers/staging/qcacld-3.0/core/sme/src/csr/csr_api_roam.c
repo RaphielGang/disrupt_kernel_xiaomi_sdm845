@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -2875,6 +2875,8 @@ QDF_STATUS csr_change_default_config_param(tpAniSirGlobal pMac,
 			pParam->min_delay_btw_roam_scans;
 		pMac->roam.configParam.roam_trigger_reason_bitmask =
 			pParam->roam_trigger_reason_bitmask;
+		pMac->roam.configParam.roaming_scan_policy =
+			pParam->roaming_scan_policy;
 		pMac->roam.configParam.isCoalesingInIBSSAllowed =
 			pParam->isCoalesingInIBSSAllowed;
 #ifdef FEATURE_WLAN_MCC_TO_SCC_SWITCH
@@ -3246,6 +3248,8 @@ QDF_STATUS csr_get_config_param(tpAniSirGlobal pMac, tCsrConfigParam *pParam)
 	pParam->min_delay_btw_roam_scans = cfg_params->min_delay_btw_roam_scans;
 	pParam->roam_trigger_reason_bitmask =
 			cfg_params->roam_trigger_reason_bitmask;
+	pParam->roaming_scan_policy =
+			cfg_params->roaming_scan_policy;
 	pParam->isCoalesingInIBSSAllowed = cfg_params->isCoalesingInIBSSAllowed;
 	pParam->allowDFSChannelRoam = cfg_params->allowDFSChannelRoam;
 	pParam->nInitialDwellTime = cfg_params->nInitialDwellTime;
@@ -4803,6 +4807,23 @@ static QDF_STATUS csr_roam_get_qos_info_from_bss(tpAniSirGlobal pMac,
 		qdf_mem_free(pIes);
 
 	return status;
+}
+
+static void csr_reset_cfg_privacy(tpAniSirGlobal pMac)
+{
+	uint8_t Key0[WNI_CFG_WEP_DEFAULT_KEY_1_LEN] = {0};
+	uint8_t Key1[WNI_CFG_WEP_DEFAULT_KEY_2_LEN] = {0};
+	uint8_t Key2[WNI_CFG_WEP_DEFAULT_KEY_3_LEN] = {0};
+	uint8_t Key3[WNI_CFG_WEP_DEFAULT_KEY_4_LEN] = {0};
+
+	cfg_set_int(pMac, WNI_CFG_PRIVACY_ENABLED, 0);
+	cfg_set_int(pMac, WNI_CFG_RSN_ENABLED, 0);
+	cfg_set_str(pMac, WNI_CFG_WEP_DEFAULT_KEY_1, Key0, 0);
+	cfg_set_str(pMac, WNI_CFG_WEP_DEFAULT_KEY_2, Key1, 0);
+	cfg_set_str(pMac, WNI_CFG_WEP_DEFAULT_KEY_3, Key2, 0);
+	cfg_set_str(pMac, WNI_CFG_WEP_DEFAULT_KEY_4, Key3, 0);
+	cfg_set_int(pMac, WNI_CFG_WEP_KEY_LENGTH, 0);
+	cfg_set_int(pMac, WNI_CFG_WEP_DEFAULT_KEYID, 0);
 }
 
 void csr_set_cfg_privacy(tpAniSirGlobal pMac, tCsrRoamProfile *pProfile,
@@ -18069,6 +18090,8 @@ void csr_cleanup_session(tpAniSirGlobal pMac, uint32_t sessionId)
 
 		/* Clean up FT related data structures */
 		sme_ft_close(pMac, sessionId);
+		sme_reset_key((tHalHandle)pMac, sessionId);
+		csr_reset_cfg_privacy(pMac);
 		csr_free_connect_bss_desc(pMac, sessionId);
 		csr_roam_free_connect_profile(&pSession->connectedProfile);
 		csr_roam_free_connected_info(pMac, &pSession->connectedInfo);
@@ -19167,6 +19190,8 @@ csr_update_roam_scan_offload_request(tpAniSirGlobal mac_ctx,
 			mac_ctx->roam.configParam.min_delay_btw_roam_scans;
 	req_buf->roam_trigger_reason_bitmask =
 			mac_ctx->roam.configParam.roam_trigger_reason_bitmask;
+	req_buf->roaming_scan_policy =
+			mac_ctx->roam.configParam.roaming_scan_policy;
 	req_buf->roam_force_rssi_trigger =
 			mac_ctx->roam.configParam.roam_force_rssi_trigger;
 
@@ -22534,7 +22559,7 @@ void csr_process_nss_update_req(tpAniSirGlobal mac, tSmeCmd *command)
 	struct sir_nss_update_request *msg;
 	QDF_STATUS status;
 	tSirMsgQ msg_return;
-	struct sir_beacon_tx_complete_rsp *param;
+	struct sir_bcn_update_rsp *param;
 	tCsrRoamSession *session;
 
 
@@ -22563,11 +22588,10 @@ void csr_process_nss_update_req(tpAniSirGlobal mac, tSmeCmd *command)
 	sme_debug("Posting eWNI_SME_NSS_UPDATE_REQ to PE");
 
 	status = cds_send_mb_message_to_mac(msg);
-	if (QDF_STATUS_SUCCESS != status) {
-		sme_err("Posting to PE failed");
+	if (QDF_IS_STATUS_SUCCESS(status))
 		return;
-	}
-	return;
+
+	sme_err("Posting to PE failed");
 fail:
 	param = qdf_mem_malloc(sizeof(*param));
 	if (!param) {
@@ -22576,8 +22600,9 @@ fail:
 		return;
 	}
 	sme_err("Sending nss update fail response to SME");
-	param->tx_status = QDF_STATUS_E_FAILURE;
-	param->session_id = command->u.nss_update_cmd.session_id;
+	param->status = QDF_STATUS_E_FAILURE;
+	param->vdev_id = command->u.nss_update_cmd.session_id;
+	param->reason = REASON_NSS_UPDATE;
 	msg_return.type = eWNI_SME_NSS_UPDATE_RSP;
 	msg_return.bodyptr = param;
 	msg_return.bodyval = 0;
@@ -22741,7 +22766,7 @@ static QDF_STATUS csr_process_roam_sync_callback(tpAniSirGlobal mac_ctx,
 		}
 
 		csr_roam_offload_scan(mac_ctx, session_id,
-				ROAM_SCAN_OFFLOAD_START,
+				ROAM_SCAN_OFFLOAD_UPDATE_CFG,
 				REASON_CONNECT);
 		return status;
 	default:

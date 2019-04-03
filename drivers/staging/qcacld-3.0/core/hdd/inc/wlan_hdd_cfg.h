@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -2246,6 +2246,30 @@ enum hdd_dot11_mode {
 
 /*
  * <ini>
+ * roaming_scan_policy - To config roaming scan policy
+ * @Min: 0
+ * @Max: 1
+ * @Default: 0
+ *
+ * This ini is used to configure roaming scan behavior from HOST
+ * 0 : DBS scan
+ * 1 : Non-DBS scan
+ *
+ * Related: None
+ *
+ * Supported Feature: Roaming
+ *
+ * Usage: External
+ *
+ * </ini>
+ */
+#define CFG_ROAM_SCAN_SCAN_POLICY_NAME "roaming_scan_policy"
+#define CFG_ROAM_SCAN_SCAN_POLICY_MIN     (0)
+#define CFG_ROAM_SCAN_SCAN_POLICY_MAX     (1)
+#define CFG_ROAM_SCAN_SCAN_POLICY_DEFAULT (0)
+
+/*
+ * <ini>
  * roam_bad_rssi_thresh_offset_2g - RSSI threshold offset for 2G to 5G roam
  * @Min: 0
  * @Max: 86
@@ -3607,6 +3631,20 @@ enum hdd_dot11_mode {
 #define CFG_FW_RSSI_MONITORING_MIN             (0)
 #define CFG_FW_RSSI_MONITORING_MAX             (1)
 #define CFG_FW_RSSI_MONITORING_DEFAULT         (1)
+
+/*
+ * gEnableRTTsupport
+ *
+ * @Min: 0 - Disabled
+ * @Max: 1 - Enabled
+ * @Default: 1 - Enabled
+ *
+ * The param is used to enable/disable support for RTT
+ */
+#define CFG_ENABLE_RTT_SUPPORT            "gEnableRTTSupport"
+#define CFG_ENABLE_RTT_SUPPORT_DEFAULT    (1)
+#define CFG_ENABLE_RTT_SUPPORT_MIN        (0)
+#define CFG_ENABLE_RTT_SUPPORT_MAX        (1)
 
 /*
  * <ini>
@@ -12465,7 +12503,12 @@ enum hw_filter_mode {
  *   OUI data Len : 00
  *   Info Mask : 35 - Check for NSS, VHT Caps and Band
  *   Capabilities: 6C - (NSS == 3 or 4) && VHT Caps Preset && Band == 2G
- *
+ * OUI 5 : 001018
+ *   OUI data Len : 06
+ *   OUI Data : 02FF009C0000
+ *   OUI data Mask: BC - 10111100
+ *   Info Mask : 25 - Check for NSS and Band
+ *   Capabilities: 48 - NSS == 4 && Band == 2G
  * This ini is used to specify the AP OUIs with which only 1x1 connection
  * is allowed.
  *
@@ -12478,7 +12521,7 @@ enum hw_filter_mode {
  * </ini>
  */
 #define CFG_ACTION_OUI_CONNECT_1X1_NAME    "gActionOUIConnect1x1"
-#define CFG_ACTION_OUI_CONNECT_1X1_DEFAULT "000C43 00 25 42 001018 06 02FFF02C0000 BC 25 42 001018 06 02FF040C0000 BC 25 42 00037F 00 35 6C"
+#define CFG_ACTION_OUI_CONNECT_1X1_DEFAULT "000C43 00 25 42 001018 06 02FFF02C0000 BC 25 42 001018 06 02FF040C0000 BC 25 42 00037F 00 35 6C 001018 06 02FF009C0000 BC 25 48"
 
 /*
  * <ini>
@@ -15869,6 +15912,7 @@ struct hdd_config {
 	uint32_t ho_delay_for_rx;
 	uint32_t min_delay_btw_roam_scans;
 	uint32_t roam_trigger_reason_bitmask;
+	bool roaming_scan_policy;
 	uint32_t roam_bg_scan_client_bitmap;
 	bool enable_edca_params;
 	uint32_t edca_vo_cwmin;
@@ -16131,6 +16175,7 @@ struct hdd_config {
 	bool roam_force_rssi_trigger;
 	uint32_t roam_preauth_retry_count;
 	uint32_t roam_preauth_no_ack_timeout;
+	uint32_t enable_rtt_support;
 };
 
 #define VAR_OFFSET(_Struct, _Var) (offsetof(_Struct, _Var))
