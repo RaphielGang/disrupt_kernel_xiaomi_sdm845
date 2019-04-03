@@ -1134,6 +1134,17 @@ static int get_prop_batt_voltage_max_design(struct smbchg_chip *chip)
 	return uv;
 }
 
+static int get_prop_batt_cycle_count(struct smbchg_chip *chip)
+{
+	int bcc = 0, rc;
+
+	rc = get_property_from_fg(chip,
+				POWER_SUPPLY_PROP_CYCLE_COUNT, &bcc);
+	if (rc)
+		pr_smb(PR_STATUS, "Couldn't get cycle_count rc = %d\n", rc);
+	return bcc;
+}
+
 static int get_prop_batt_health(struct smbchg_chip *chip)
 {
 	if (chip->batt_hot)
@@ -5939,6 +5950,7 @@ static enum power_supply_property smbchg_battery_properties[] = {
 	POWER_SUPPLY_PROP_RESTRICTED_CHARGING,
 	POWER_SUPPLY_PROP_ALLOW_HVDCP3,
 	POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED,
+	POWER_SUPPLY_PROP_CYCLE_COUNT,
 };
 
 static int smbchg_battery_set_property(struct power_supply *psy,
@@ -6164,6 +6176,9 @@ static int smbchg_battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED:
 		val->intval = chip->max_pulse_allowed;
+		break;
+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
+		val->intval = get_prop_batt_cycle_count(chip);
 		break;
 	default:
 		return -EINVAL;
