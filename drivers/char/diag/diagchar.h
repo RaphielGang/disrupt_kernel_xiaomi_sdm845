@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -288,6 +288,7 @@ for (i = 0; i <= fwd_info->num_pd - 2; i++)	\
 #define DIAG_CNTL_TYPE		2
 #define DIAG_DCI_TYPE		3
 
+#define MAX_DCI_CLIENTS		10
 /*
  * List of diag ids
  * 0 is reserved for unknown diag id, 1 for apps, diag ids
@@ -483,6 +484,7 @@ struct diag_md_session_t {
 	int pid;
 	int peripheral_mask;
 	uint8_t hdlc_disabled;
+	uint8_t msg_mask_tbl_count;
 	struct timer_list hdlc_reset_timer;
 	struct diag_mask_info *msg_mask;
 	struct diag_mask_info *log_mask;
@@ -579,7 +581,7 @@ struct diagchar_dev {
 	struct list_head dci_req_list;
 	struct list_head dci_client_list;
 	int dci_tag;
-	int dci_client_id;
+	int dci_client_id[MAX_DCI_CLIENTS];
 	struct mutex dci_mutex;
 	int num_dci_client;
 	unsigned char *apps_dci_buf;

@@ -1965,6 +1965,8 @@ int arm_iommu_map_sg(struct device *dev, struct scatterlist *sg,
 		total_length += s->length;
 
 	iova = __alloc_iova(mapping, total_length);
+	if (iova == DMA_ERROR_CODE)
+		return 0;
 	ret = iommu_map_sg(mapping->domain, iova, sg, nents, prot);
 	if (ret != total_length) {
 		__free_iova(mapping, iova, total_length);
@@ -2344,15 +2346,11 @@ static int
 iommu_init_mapping(struct device *dev, struct dma_iommu_mapping *mapping)
 {
 	unsigned int bitmap_size = BITS_TO_LONGS(mapping->bits) * sizeof(long);
-	u64 size = mapping->bits << PAGE_SHIFT;
 	int extensions = 1;
 	int err = -ENOMEM;
 
 	if (!bitmap_size)
 		return -EINVAL;
-
-	WARN(!IS_ALIGNED(size, SZ_128M),
-			"size is not aligned to 128M, alignment enforced");
 
 	if (bitmap_size > PAGE_SIZE) {
 		extensions = bitmap_size / PAGE_SIZE;

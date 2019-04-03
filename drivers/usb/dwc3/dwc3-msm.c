@@ -1340,7 +1340,7 @@ static void gsi_set_clear_dbell(struct usb_ep *ep,
 */
 static bool gsi_check_ready_to_suspend(struct usb_ep *ep, bool f_suspend)
 {
-	u32	timeout = 1500;
+	u32	timeout = 500;
 	u32	reg = 0;
 	struct dwc3_ep *dep = to_dwc3_ep(ep);
 	struct dwc3 *dwc = dep->dwc;
@@ -1353,6 +1353,7 @@ static bool gsi_check_ready_to_suspend(struct usb_ep *ep, bool f_suspend)
 			"Unable to suspend GSI ch. WR_CTRL_STATE != 0\n");
 			return false;
 		}
+		usleep_range(20, 22);
 	}
 	/* Check for U3 only if we are not handling Function Suspend */
 	if (!f_suspend) {
@@ -2142,6 +2143,7 @@ static int dwc3_msm_prepare_suspend(struct dwc3_msm *mdwc)
 		reg = dwc3_msm_read_reg(mdwc->base, PWR_EVNT_IRQ_STAT_REG);
 		if (reg & PWR_EVNT_LPM_IN_L2_MASK)
 			break;
+		usleep_range(20, 30);
 	}
 	if (!(reg & PWR_EVNT_LPM_IN_L2_MASK))
 		dev_err(mdwc->dev, "could not transition HS PHY to L2\n");
@@ -2347,6 +2349,12 @@ static int dwc3_msm_suspend(struct dwc3_msm *mdwc, bool hibernation)
 
 	/* Suspend SS PHY */
 	if (dwc->maximum_speed == USB_SPEED_SUPER) {
+		if (mdwc->in_host_mode) {
+			u32 reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
+
+			reg |= DWC3_GUSB3PIPECTL_DISRXDETU3;
+			dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
+		}
 		/* indicate phy about SS mode */
 		if (dwc3_msm_is_superspeed(mdwc))
 			mdwc->ss_phy->flags |= DEVICE_IN_SS_MODE;
@@ -2531,6 +2539,13 @@ static int dwc3_msm_resume(struct dwc3_msm *mdwc)
 		usb_phy_set_suspend(mdwc->ss_phy, 0);
 		mdwc->ss_phy->flags &= ~DEVICE_IN_SS_MODE;
 		mdwc->lpm_flags &= ~MDWC3_SS_PHY_SUSPEND;
+
+		if (mdwc->in_host_mode) {
+			u32 reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
+
+			reg &= ~DWC3_GUSB3PIPECTL_DISRXDETU3;
+			dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
+		}
 	}
 
 	mdwc->hs_phy->flags &= ~(PHY_HSFS_MODE | PHY_LS_MODE);
@@ -3714,6 +3729,7 @@ put_psy:
 	if (cpu_to_affin)
 		unregister_cpu_notifier(&mdwc->dwc3_cpu_notifier);
 put_dwc3:
+	platform_device_put(mdwc->dwc3);
 	if (mdwc->bus_perf_client)
 		msm_bus_scale_unregister_client(mdwc->bus_perf_client);
 
@@ -3767,6 +3783,7 @@ static int dwc3_msm_remove(struct platform_device *pdev)
 
 	if (mdwc->hs_phy)
 		mdwc->hs_phy->flags &= ~PHY_HOST_MODE;
+	platform_device_put(mdwc->dwc3);
 	of_platform_depopulate(&pdev->dev);
 
 	pm_runtime_disable(mdwc->dev);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2014, 2016-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2014, 2016-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -78,6 +78,11 @@
 				     <0 0xa3 0 IRQ_TYPE_NONE>;
 			interrupt-names = "pm8916_mpp1", "pm8916_mpp2",
 					  "pm8916_mpp3", "pm8916_mpp4";
+		};
+
+		pm8916_coincell: qcom,coincell@2800 {
+			compatible = "qcom,qpnp-coincell";
+			reg = <0x2800 0x100>;
 		};
 
 		pm8916_rtc: qcom,pm8916_rtc {
@@ -175,6 +180,7 @@
 			compatible = "qcom,qpnp-linear-charger";
 			#address-cells = <1>;
 			#size-cells = <1>;
+			#cooling-cells = <2>;
 
 			qcom,vddmax-mv = <4200>;
 			qcom,vddsafe-mv = <4200>;
@@ -299,12 +305,10 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		pm8916_pwm: pwm@bc00 {
-			compatible = "qcom,qpnp-pwm";
+		pm8916_pwm: qcom,pwms@bc00 {
+			compatible = "qcom,pwm-lpg";
 			reg = <0xbc00 0x100>;
-			reg-names = "qpnp-lpg-channel-base";
-			qcom,channel-id = <0>;
-			qcom,supported-sizes = <6>, <9>;
+			reg-names = "lpg-base";
 			#pwm-cells = <2>;
 		};
 

@@ -82,6 +82,8 @@ enum print_reason {
 #define OV_VOTER			"OV_VOTER"
 #define DCIN_USER_VOTER                "DCIN_USER_VOTER"
 #define UNSTANDARD_QC2_VOTER			"UNSTANDARD_QC2_VOTER"
+#define FG_ESR_VOTER			"FG_ESR_VOTER"
+#define FCC_STEPPER_VOTER		"FCC_STEPPER_VOTER"
 
 #define VCONN_MAX_ATTEMPTS	3
 #define OTG_MAX_ATTEMPTS	3
@@ -417,6 +419,8 @@ struct smb_charger {
 	bool			report_usb_absent;
 	int			dc_input_current_now;
 	bool			disable_stat_sw_override;
+	bool			in_chg_lock;
+	bool			fcc_stepper_enable;
 
 	/* workaround flag */
 	u32			wa_flags;

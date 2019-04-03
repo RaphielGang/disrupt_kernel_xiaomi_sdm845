@@ -68,6 +68,9 @@ SoCs:
 - MSM8917
   compatible = "qcom,msm8917"
 
+- MSM8940
+  compatible = "qcom,msm8940"
+
 - MSM8936
   compatible = "qcom,msm8936"
 
@@ -100,6 +103,12 @@ SoCs:
 
 - SDA670
   compatible = "qcom,sda670"
+
+- SXR1130
+  compatible = "qcom,sxr1130"
+
+- QRD1130
+  compatible = "qcom,sxr1130-qrd"
 
 - MSM8952
   compatible = "qcom,msm8952"
@@ -136,6 +145,9 @@ SoCs:
 
 - SDA429
   compatible = "qcom,sda429"
+
+- QM215
+  compatible = "qcom, qm215"
 
 - MDM9640
   compatible = "qcom,mdm9640"
@@ -270,6 +282,8 @@ compatible = "qcom,msm8917-mtp"
 compatible = "qcom,msm8917-rumi"
 compatible = "qcom,msm8917-qrd"
 compatible = "qcom,msm8917-qrd-sku5"
+compatible = "qcom,msm8940-mtp"
+compatible = "qcom,msm8940-cdp"
 compatible = "qcom,msm8926-cdp"
 compatible = "qcom,msm8926-mtp"
 compatible = "qcom,msm8926-qrd"
@@ -321,6 +335,8 @@ compatible = "qcom,sda845-mtp"
 compatible = "qcom,sda845-qrd"
 compatible = "qcom,sda845-hdk"
 compatible = "qcom,sda845-svr"
+compatible = "qcom,sxr1130-cdp"
+compatible = "qcom,sxr1130-mtp"
 compatible = "qcom,sdm670-rumi"
 compatible = "qcom,sdm670-cdp"
 compatible = "qcom,sdm670-mtp"
@@ -356,6 +372,7 @@ compatible = "qcom,sdm439-mtp"
 compatible = "qcom,sdm439-qrd"
 compatible = "qcom,sda439-cdp"
 compatible = "qcom,sda439-mtp"
+compatible = "qcom,qm215-qrd"
 compatible = "qcom,msm8953-rumi"
 compatible = "qcom,msm8953-sim"
 compatible = "qcom,msm8953-cdp"

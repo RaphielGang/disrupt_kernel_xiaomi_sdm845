@@ -448,12 +448,14 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio)
 				1, is_read_io(fio->op), fio->type, fio->temp);
 
 	if (f2fs_may_encrypt_bio(inode, fio))
-	fscrypt_set_ice_dun(inode, bio, PG_DUN(inode, fio->page));
+		fscrypt_set_ice_dun(inode, bio, PG_DUN(inode, fio->page));
+	fscrypt_set_ice_skip(bio, fio->encrypted_page ? 1 : 0);
 
 	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
 		bio_put(bio);
 		return -EFAULT;
 	}
+	fio->op_flags |= fio->encrypted_page ? REQ_NOENCRYPT : 0;
 	bio_set_op_attrs(bio, fio->op, fio->op_flags);
 
 	__submit_bio(fio->sbi, bio, fio->type);
@@ -471,6 +473,7 @@ int f2fs_submit_page_write(struct f2fs_io_info *fio)
 	struct page *bio_page;
 	struct inode *inode;
 	bool bio_encrypted;
+	int bi_crypt_skip;
 	u64 dun;
 	int err = 0;
 
@@ -495,8 +498,11 @@ next:
 	verify_block_addr(fio, fio->new_blkaddr);
 
 	bio_page = fio->encrypted_page ? fio->encrypted_page : fio->page;
+	fio->op_flags |= fio->encrypted_page ? REQ_NOENCRYPT : 0;
+
 	inode = fio->page->mapping->host;
 	dun = PG_DUN(inode, fio->page);
+	bi_crypt_skip = fio->encrypted_page ? 1 : 0;
 	bio_encrypted = f2fs_may_encrypt_bio(inode, fio);
 
 	/* set submitted = true as a return value */
@@ -510,7 +516,7 @@ next:
 		__submit_merged_bio(io);
 
 	/* ICE support */
-	if (!fscrypt_mergeable_bio(io->bio, dun, bio_encrypted))
+	if (!fscrypt_mergeable_bio(io->bio, dun, bio_encrypted, bi_crypt_skip))
 		__submit_merged_bio(io);
 
 alloc_new:
@@ -526,7 +532,7 @@ alloc_new:
 						fio->type, fio->temp);
 		if (bio_encrypted)
 			fscrypt_set_ice_dun(inode, io->bio, dun);
-
+		fscrypt_set_ice_skip(io->bio, bi_crypt_skip);
 		io->fio = *fio;
 	}
 
@@ -563,9 +569,13 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 		return ERR_PTR(-ENOMEM);
 	f2fs_target_device(sbi, blkaddr, bio);
 	bio->bi_end_io = f2fs_read_end_io;
-	bio_set_op_attrs(bio, REQ_OP_READ, 0);
+	bio_set_op_attrs(bio, REQ_OP_READ,
+			 (f2fs_encrypted_inode(inode) ?
+			  REQ_NOENCRYPT :
+			  0));
 
-	if (f2fs_encrypted_file(inode))
+        if (f2fs_encrypted_file(inode) &&
+            !fscrypt_using_hardware_encryption(inode))
 		post_read_steps |= 1 << STEP_DECRYPT;
 	if (post_read_steps) {
 		ctx = mempool_alloc(bio_post_read_ctx_pool, GFP_NOFS);
@@ -1537,7 +1547,7 @@ submit_and_realloc:
 
 		dun = PG_DUN(inode, page);
 		bio_encrypted = f2fs_may_encrypt_bio(inode, NULL);
-		if (!fscrypt_mergeable_bio(bio, dun, bio_encrypted)) {
+		if (!fscrypt_mergeable_bio(bio, dun, bio_encrypted, 0)) {
 			__submit_bio(F2FS_I_SB(inode), bio, DATA);
 			bio = NULL;
 		}
@@ -1548,9 +1558,9 @@ submit_and_realloc:
 				bio = NULL;
 				goto set_error_page;
 			}
+			if (bio_encrypted)
+				fscrypt_set_ice_dun(inode, bio, dun);
 		}
-		if (bio_encrypted)
-			fscrypt_set_ice_dun(inode, bio, dun);
 		if (bio_add_page(bio, page, blocksize, 0) < blocksize)
 			goto submit_and_realloc;
 

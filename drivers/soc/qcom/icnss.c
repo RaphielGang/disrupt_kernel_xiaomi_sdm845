@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -285,6 +285,7 @@ enum icnss_driver_state {
 	ICNSS_FW_DOWN,
 	ICNSS_DRIVER_UNLOADING,
 	ICNSS_REJUVENATE,
+	ICNSS_MODE_ON,
 };
 
 struct ce_irq_list {
@@ -1610,6 +1611,16 @@ static int wlfw_wlan_mode_send_sync_msg(enum wlfw_driver_mode_enum_v01 mode)
 	}
 	penv->stats.mode_resp++;
 
+	if (mode == QMI_WLFW_OFF_V01) {
+		icnss_pr_dbg("Clear mode on 0x%lx, mode: %d\n",
+			     penv->state, mode);
+		clear_bit(ICNSS_MODE_ON, &penv->state);
+	} else {
+		icnss_pr_dbg("Set mode on 0x%lx, mode: %d\n",
+			     penv->state, mode);
+		set_bit(ICNSS_MODE_ON, &penv->state);
+	}
+
 	return 0;
 
 out:
@@ -2345,6 +2356,7 @@ static int icnss_driver_event_fw_ready_ind(void *data)
 		return -ENODEV;
 
 	set_bit(ICNSS_FW_READY, &penv->state);
+	clear_bit(ICNSS_MODE_ON, &penv->state);
 
 	icnss_pr_info("WLAN FW is ready: 0x%lx\n", penv->state);
 
@@ -2485,7 +2497,8 @@ static int icnss_driver_event_pd_service_down(struct icnss_priv *priv,
 		goto out;
 	}
 
-	icnss_fw_crashed(priv, event_data);
+	if (!test_bit(ICNSS_PD_RESTART, &priv->state))
+		icnss_fw_crashed(priv, event_data);
 
 out:
 	kfree(data);
@@ -2496,11 +2509,19 @@ out:
 static int icnss_driver_event_early_crash_ind(struct icnss_priv *priv,
 					      void *data)
 {
+	struct icnss_uevent_fw_down_data fw_down_data = {0};
 	int ret = 0;
 
 	if (!test_bit(ICNSS_WLFW_EXISTS, &priv->state)) {
 		icnss_ignore_qmi_timeout(false);
 		goto out;
+	}
+
+	if (test_bit(ICNSS_FW_READY, &priv->state) &&
+	    !test_bit(ICNSS_DRIVER_UNLOADING, &priv->state)) {
+		fw_down_data.crashed = true;
+		icnss_call_driver_uevent(priv, ICNSS_UEVENT_FW_DOWN,
+					 &fw_down_data);
 	}
 
 	priv->early_crash_ind = true;
@@ -3165,6 +3186,8 @@ EXPORT_SYMBOL(icnss_disable_irq);
 
 int icnss_get_soc_info(struct device *dev, struct icnss_soc_info *info)
 {
+	char *fw_build_timestamp = NULL;
+
 	if (!penv || !dev) {
 		icnss_pr_err("Platform driver not initialized\n");
 		return -EINVAL;
@@ -3177,6 +3200,8 @@ int icnss_get_soc_info(struct device *dev, struct icnss_soc_info *info)
 	info->board_id = penv->board_info.board_id;
 	info->soc_id = penv->soc_info.soc_id;
 	info->fw_version = penv->fw_version_info.fw_version;
+	fw_build_timestamp = penv->fw_version_info.fw_build_timestamp;
+	fw_build_timestamp[QMI_WLFW_MAX_TIMESTAMP_LEN_V01] = '\0';
 	strlcpy(info->fw_build_timestamp,
 		penv->fw_version_info.fw_build_timestamp,
 		QMI_WLFW_MAX_TIMESTAMP_LEN_V01 + 1);
@@ -3295,6 +3320,12 @@ int icnss_wlan_enable(struct device *dev, struct icnss_wlan_enable_cfg *config,
 	if (test_bit(ICNSS_FW_DOWN, &penv->state) ||
 	    !test_bit(ICNSS_FW_READY, &penv->state)) {
 		icnss_pr_err("FW down, ignoring wlan_enable state: 0x%lx\n",
+			     penv->state);
+		return -EINVAL;
+	}
+
+	if (test_bit(ICNSS_MODE_ON, &penv->state)) {
+		icnss_pr_err("Already Mode on, ignoring wlan_enable state: 0x%lx\n",
 			     penv->state);
 		return -EINVAL;
 	}
@@ -3512,7 +3543,6 @@ int icnss_trigger_recovery(struct device *dev)
 		goto out;
 	}
 
-	WARN_ON(1);
 	icnss_pr_warn("Initiate PD restart at WLAN FW, state: 0x%lx\n",
 		      priv->state);
 
@@ -4017,6 +4047,9 @@ static int icnss_stats_show_state(struct seq_file *s, struct icnss_priv *priv)
 			continue;
 		case ICNSS_DRIVER_UNLOADING:
 			seq_puts(s, "DRIVER UNLOADING");
+			continue;
+		case ICNSS_MODE_ON:
+			seq_puts(s, "MODE ON DONE");
 		}
 
 		seq_printf(s, "UNKNOWN-%d", i);

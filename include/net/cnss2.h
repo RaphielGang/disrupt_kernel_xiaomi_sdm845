@@ -115,6 +115,11 @@ struct cnss_shadow_reg_v2_cfg {
 	u32 addr;
 };
 
+struct cnss_rri_over_ddr_cfg {
+	u32 base_addr_low;
+	u32 base_addr_high;
+};
+
 struct cnss_wlan_enable_cfg {
 	u32 num_ce_tgt_cfg;
 	struct cnss_ce_tgt_pipe_cfg *ce_tgt_cfg;
@@ -124,6 +129,8 @@ struct cnss_wlan_enable_cfg {
 	struct cnss_shadow_reg_cfg *shadow_reg_cfg;
 	u32 num_shadow_reg_v2_cfg;
 	struct cnss_shadow_reg_v2_cfg *shadow_reg_v2_cfg;
+	bool rri_over_ddr_cfg_valid;
+	struct cnss_rri_over_ddr_cfg rri_over_ddr_cfg;
 };
 
 enum cnss_driver_mode {
@@ -159,6 +166,9 @@ extern int cnss_get_fw_files_for_target(struct device *dev,
 					u32 target_type, u32 target_version);
 extern int cnss_get_platform_cap(struct device *dev,
 				 struct cnss_platform_cap *cap);
+extern struct dma_iommu_mapping *cnss_smmu_get_mapping(struct device *dev);
+extern int cnss_smmu_map(struct device *dev,
+			 phys_addr_t paddr, uint32_t *iova_addr, size_t size);
 extern int cnss_get_soc_info(struct device *dev, struct cnss_soc_info *info);
 extern int cnss_request_bus_bandwidth(struct device *dev, int bandwidth);
 extern int cnss_power_up(struct device *dev);
