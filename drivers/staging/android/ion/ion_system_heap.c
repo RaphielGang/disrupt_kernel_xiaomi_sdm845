@@ -918,7 +918,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	if (ion_system_heap_create_pools(dev, heap->cached_pools, true))
 		goto err_create_cached_pools;
 
-	if (ion_system_heap_create_pools(dev, heap->cam_pools))
+	if (ion_system_heap_create_pools(dev, heap->cam_pools, false))
 		goto err_create_cam_pools;
 
 	for (i = 0; i < num_orders; i++)
