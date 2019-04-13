@@ -85,7 +85,7 @@ void update_firmware_release(void)
 	if (fw_entry) {
 		release_firmware(fw_entry);
 	}
-	fw_entry=NULL;
+	fw_entry = NULL;
 }
 
 /*******************************************************
@@ -458,7 +458,7 @@ int32_t Erase_Flash(void)
 	else
 		count = fw_entry->size / FLASH_SECTOR_SIZE;
 
-	for(i = 0; i < count; i++) {
+	for (i = 0; i < count; i++) {
 		/* Write Enable */
 		buf[0] = 0x00;
 		buf[1] = 0x06;
@@ -636,11 +636,11 @@ int32_t Write_Flash(void)
 			}
 		}
 		if (fw_entry->size - Flash_Address >= 256)
-			tmpvalue=(Flash_Address >> 16) + ((Flash_Address >> 8) & 0xFF) + (Flash_Address & 0xFF) + 0x00 + (255);
+			tmpvalue = (Flash_Address >> 16) + ((Flash_Address >> 8) & 0xFF) + (Flash_Address & 0xFF) + 0x00 + (255);
 		else
-			tmpvalue=(Flash_Address >> 16) + ((Flash_Address >> 8) & 0xFF) + (Flash_Address & 0xFF) + 0x00 + (fw_entry->size - Flash_Address - 1);
+			tmpvalue = (Flash_Address >> 16) + ((Flash_Address >> 8) & 0xFF) + (Flash_Address & 0xFF) + 0x00 + (fw_entry->size - Flash_Address - 1);
 
-		for (k = 0;k < min(fw_entry->size - Flash_Address,(size_t)256); k++)
+		for (k = 0; k < min(fw_entry->size - Flash_Address,(size_t)256); k++)
 			tmpvalue += fw_entry->data[Flash_Address + k];
 
 		tmpvalue = 255 - tmpvalue + 1;
