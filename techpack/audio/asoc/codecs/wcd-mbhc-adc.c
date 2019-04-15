@@ -9,7 +9,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
- #define DEBUG
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/slab.h>
@@ -366,7 +365,6 @@ static int wcd_mbhc_adc_get_hs_thres(struct wcd_mbhc *mbhc)
 		hs_threshold = ((WCD_MBHC_ADC_HS_THRESHOLD_MV *
 			micbias_mv) / WCD_MBHC_ADC_MICBIAS_MV);
 	}
-	pr_debug("%s(): hs_threshold=%d",__func__, hs_threshold);
 	return hs_threshold;
 }
 
@@ -385,7 +383,6 @@ static int wcd_mbhc_adc_get_hph_thres(struct wcd_mbhc *mbhc)
 		hph_threshold = ((WCD_MBHC_ADC_HPH_THRESHOLD_MV *
 			micbias_mv) / WCD_MBHC_ADC_MICBIAS_MV);
 	}
-	pr_debug("%s(): hph_threshold=%d",__func__, hph_threshold);
 	return hph_threshold;
 }
 
@@ -412,8 +409,6 @@ static bool wcd_mbhc_adc_check_for_spl_headset(struct wcd_mbhc *mbhc,
 	output_mv = wcd_measure_adc_once(mbhc, MUX_CTL_IN2P);
 	adc_threshold = wcd_mbhc_adc_get_hs_thres(mbhc);
 	adc_hph_threshold = wcd_mbhc_adc_get_hph_thres(mbhc);
-	pr_debug("%s(), output_mv=%d, adc_threshold=%d, adc_hph_threshold=%d",
-					__func__, output_mv, adc_threshold, adc_hph_threshold);
 
 	if (output_mv > adc_threshold || output_mv < adc_hph_threshold) {
 		spl_hs = false;
@@ -598,7 +593,7 @@ static int wcd_mbhc_get_plug_from_adc(struct wcd_mbhc *mbhc, int adc_result)
 
 	hs_thr = wcd_mbhc_adc_get_hs_thres(mbhc);
 	hph_thr = wcd_mbhc_adc_get_hph_thres(mbhc);
-	pr_debug("%s: hs_thr=%d, hph_thr=%d adc_result=%d\n", __func__, hs_thr, hph_thr, adc_result);
+
 	if (adc_result < hph_thr)
 		plug_type = MBHC_PLUG_TYPE_HEADPHONE;
 	else if (adc_result > hs_thr)
@@ -655,7 +650,6 @@ static void wcd_correct_swch_plug(struct work_struct *work)
 	/* Find plug type */
 	output_mv = wcd_measure_adc_continuous(mbhc);
 	plug_type = wcd_mbhc_get_plug_from_adc(mbhc, output_mv);
-	pr_debug("%s(), micbias_mv=%d, hs_threshold=%d output_mv=%d plug_type=%d", __func__,micbias_mv, hs_threshold, output_mv, plug_type);
 
 	/*
 	 * Report plug type if it is either headset or headphone
@@ -711,7 +705,7 @@ correct_plug_type:
 		 * sometime and re-check stop request again.
 		 */
 		plug_type = wcd_mbhc_get_plug_from_adc(mbhc, output_mv);
-		pr_debug("%s() 3s loop, output_mv=%d plug_type=%d", __func__,output_mv, plug_type);
+
 		if ((output_mv > hs_threshold) &&
 		    (spl_hs_count < WCD_MBHC_SPL_HS_CNT)) {
 			spl_hs = wcd_mbhc_adc_check_for_spl_headset(mbhc,

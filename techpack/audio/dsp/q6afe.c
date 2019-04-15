@@ -20,12 +20,12 @@
 #include <linux/delay.h>
 #include <dsp/msm_audio_ion.h>
 #include <dsp/apr_audio-v2.h>
+#include <dsp/apr_elliptic.h>
 #include <dsp/audio_cal_utils.h>
 #include <dsp/q6afe-v2.h>
 #include <dsp/q6audio-v2.h>
 #include <ipc/apr_tal.h>
 #include "adsp_err.h"
-#include <dsp/apr_elliptic.h>
 
 #define WAKELOCK_TIMEOUT	5000
 enum {
@@ -1099,7 +1099,6 @@ fail_cmd:
 	return ret;
 }
 
-/* ELUS Begin */
 afe_ultrasound_state_t elus_afe = {
        .ptr_apr = &this_afe.apr,
        .ptr_status = &this_afe.status,
@@ -1108,7 +1107,6 @@ afe_ultrasound_state_t elus_afe = {
        .timeout_ms = TIMEOUT_MS,
 };
 EXPORT_SYMBOL(elus_afe);
-/* ELUS End */
 
 static void afe_send_cal_spkr_prot_tx(int port_id)
 {

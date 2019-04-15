@@ -5622,6 +5622,7 @@ static int tavil_compander_put(struct snd_kcontrol *kcontrol,
 		/* Set Gain Source Select based on compander enable/disable */
 		snd_soc_update_bits(codec, WCD934X_HPH_L_EN, 0x20,
 				(value ? 0x00:0x20));
+
 		/* Disable Compander Clock */
 		snd_soc_update_bits(codec, WCD934X_CDC_RX1_RX_PATH_CFG0, 0x02, 0x00);
 		snd_soc_update_bits(codec, WCD934X_CDC_COMPANDER1_CTL0, 0x04, 0x04);
@@ -5629,10 +5630,12 @@ static int tavil_compander_put(struct snd_kcontrol *kcontrol,
 		snd_soc_update_bits(codec, WCD934X_CDC_COMPANDER1_CTL0, 0x02, 0x00);
 		snd_soc_update_bits(codec, WCD934X_CDC_COMPANDER1_CTL0, 0x01, 0x00);
 		snd_soc_update_bits(codec, WCD934X_CDC_COMPANDER1_CTL0, 0x04, 0x00);
+
 		break;
 	case COMPANDER_2:
 		snd_soc_update_bits(codec, WCD934X_HPH_R_EN, 0x20,
 				(value ? 0x00:0x20));
+
 		/* Disable Compander Clock */
 		snd_soc_update_bits(codec, WCD934X_CDC_RX2_RX_PATH_CFG0, 0x02, 0x00);
 		snd_soc_update_bits(codec, WCD934X_CDC_COMPANDER2_CTL0, 0x04, 0x04);
@@ -6144,6 +6147,7 @@ static int tavil_rx_hph_mode_put(struct snd_kcontrol *kcontrol,
 	tavil->hph_mode = mode_val;
 	return 0;
 }
+
 static int codec_version_get(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_value *ucontrol)
 {
@@ -6172,7 +6176,7 @@ static int codec_version_get(struct snd_kcontrol *kcontrol,
 			__func__, wcd9xxx->version);
 	}
 
-    return 0;
+	return 0;
 }
 
 static const char * const rx_hph_mode_mux_text[] = {
@@ -6222,6 +6226,7 @@ static const char * const tavil_ear_spkr_pa_gain_text[] = {
 	"G_DEFAULT", "G_0_DB", "G_1_DB", "G_2_DB", "G_3_DB",
 	"G_4_DB", "G_5_DB", "G_6_DB"
 };
+
 static const char *const codec_version_text[] = {"Unknown", "WCD9340_v1.0", "WCD9341_v1.0", "WCD9340_v1.1", "WCD9341_v1.1"};
 static const struct soc_enum codec_version[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(codec_version_text), codec_version_text),
@@ -6517,7 +6522,7 @@ static const struct snd_kcontrol_new tavil_snd_controls[] = {
 	SOC_ENUM_EXT("AMIC_5_6 PWR MODE", amic_pwr_lvl_enum,
 		tavil_amic_pwr_lvl_get, tavil_amic_pwr_lvl_put),
 	SOC_ENUM_EXT("Codec Version", codec_version,
-		codec_version_get, NULL ),
+		codec_version_get, NULL),
 };
 
 static int tavil_dec_enum_put(struct snd_kcontrol *kcontrol,
