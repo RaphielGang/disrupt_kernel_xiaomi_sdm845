@@ -5938,8 +5938,7 @@ static int compute_energy(struct energy_env *eenv)
 					cpu_count--;
 				}
 
-				if (cpumask_equal(sched_group_cpus(sg), sched_group_cpus(eenv->sg_top)) &&
-					sd->child)
+				if (cpumask_equal(sched_group_cpus(sg), sched_group_cpus(eenv->sg_top)))
 					goto next_cpu;
 
 			} while (sg = sg->next, sg != sd->groups);
@@ -6954,7 +6953,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 	int best_idle_cpu = -1;
 	int target_cpu = -1;
 	int cpu, i;
-	long most_spare_cap = 0;
+	long spare_cap, most_spare_cap = 0;
 	int most_spare_cap_cpu = -1;
 	unsigned int active_cpus_count = 0;
 	int isolated_candidate = -1;
@@ -7034,8 +7033,6 @@ retry:
 			 * than the one required to boost the task.
 			 */
 			new_util = max(min_util, new_util);
-			if (new_util > capacity_orig)
-				continue;
 
 			/*
 			 * Include minimum capacity constraint:
@@ -7046,6 +7043,8 @@ retry:
 			 */
 			min_capped_util = max(new_util, capacity_min_of(i));
 
+			if (new_util > capacity_orig)
+				continue;
 
 			/*
 			 * Case A) Latency sensitive tasks
@@ -9649,10 +9648,10 @@ void fix_small_imbalance(struct lb_env *env, struct sd_lb_stats *sds)
 	 * check just in case.
 	 */
 	if (env->sd->flags & SD_ASYM_CPUCAPACITY &&
-	    busiest->group_type == group_overloaded &&
-	    busiest->sum_nr_running > busiest->group_weight &&
-	    local->sum_nr_running < local->group_weight &&
-	    local->group_capacity < busiest->group_capacity)
+		busiest->group_type == group_overloaded &&
+		busiest->sum_nr_running > busiest->group_weight &&
+		local->sum_nr_running < local->group_weight &&
+		local->group_capacity < busiest->group_capacity)
 		env->imbalance = busiest->load_per_task;
 }
 
