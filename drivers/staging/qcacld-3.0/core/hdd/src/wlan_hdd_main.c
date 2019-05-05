@@ -8928,9 +8928,6 @@ static hdd_context_t *hdd_context_create(struct device *dev)
 	if (ret)
 		goto err_deinit_hdd_context;
 
-	wlan_logging_set_log_to_console(hdd_ctx->config->wlanLoggingToConsole);
-	wlan_logging_set_active(hdd_ctx->config->wlanLoggingEnable);
-
 	/*
 	 * Update QDF trace levels based upon the code. The multicast
 	 * levels of the code need not be set when the logger thread
