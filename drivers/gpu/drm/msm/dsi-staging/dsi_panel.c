@@ -1121,6 +1121,8 @@ static int dsi_panel_parse_timing(struct device *parent,
 		goto error;
 	}
 
+	BUG_ON(mode->refresh_rate != 60);
+
 	rc = dsi_panel_parse(of_node, fw_entry,
 		"qcom,mdss-dsi-panel-width", &mode->h_active);
 	if (rc) {
