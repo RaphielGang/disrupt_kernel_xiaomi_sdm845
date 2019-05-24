@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -1760,6 +1760,7 @@ static QDF_STATUS wma_setup_install_key_cmd(tp_wma_handle wma_handle,
 	if (iface)
 		iface->is_waiting_for_key = false;
 
+	qdf_mem_zero(&params, sizeof(struct set_key_params));
 	return status;
 }
 
@@ -1885,6 +1886,8 @@ void wma_set_bsskey(tp_wma_handle wma_handle, tpSetBssKeyParams key_info)
 	wma_handle->ibss_started++;
 	/* TODO: Should we wait till we get HTT_T2H_MSG_TYPE_SEC_IND? */
 	key_info->status = QDF_STATUS_SUCCESS;
+
+	qdf_mem_zero(&key_params, sizeof(struct wma_set_key_params));
 
 out:
 	wma_send_msg_high_priority(wma_handle,
@@ -2205,6 +2208,7 @@ void wma_set_stakey(tp_wma_handle wma_handle, tpSetStaKeyParams key_info)
 	/* TODO: Should we wait till we get HTT_T2H_MSG_TYPE_SEC_IND? */
 	key_info->status = QDF_STATUS_SUCCESS;
 out:
+	qdf_mem_zero(&key_params, sizeof(struct wma_set_key_params));
 	if (key_info->sendRsp)
 		wma_send_msg_high_priority(wma_handle, WMA_SET_STAKEY_RSP,
 			(void *)key_info, 0);
