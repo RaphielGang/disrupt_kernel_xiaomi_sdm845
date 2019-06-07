@@ -65,6 +65,7 @@
 #include <linux/unistd.h>
 #include <linux/ioctl.h>
 #include <linux/vmalloc.h>
+#include <linux/pm_qos.h>
 #include "focaltech_common.h"
 
 /*****************************************************************************
@@ -188,6 +189,7 @@ struct fts_ts_data {
 	struct proc_dir_entry *tp_fw_version_proc;
 	struct proc_dir_entry *tp_lockdown_info_proc;
 
+	struct pm_qos_request pm_qos_req;
 };
 
 struct fts_mode_switch {

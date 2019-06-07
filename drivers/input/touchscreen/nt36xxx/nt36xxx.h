@@ -26,6 +26,8 @@
 #include <linux/earlysuspend.h>
 #endif
 
+#include <linux/pm_qos.h>
+
 #include "nt36xxx_mem_map.h"
 
 #define PINCTRL_STATE_ACTIVE		"pmx_ts_active"
@@ -155,6 +157,7 @@ struct nvt_ts_data {
 	struct completion dev_pm_suspend_completion;
 	struct work_struct resume_work;
 	struct workqueue_struct *event_wq;
+	struct pm_qos_request pm_qos_req;
 
 	struct proc_dir_entry *input_proc;
 };
