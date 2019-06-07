@@ -11,6 +11,9 @@
  * GNU General Public License for more details.
  */
 &cci {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
 	actuator0: qcom,actuator@0 {
 		cell-index = <0>;
 		reg = <0x0>;
