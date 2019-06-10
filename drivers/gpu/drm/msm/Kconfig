@@ -154,3 +154,9 @@ config DRM_SDE_XLOG_DEBUG
 	default n
 	depends on DRM_MSM
 
+config DRM_SYNC_DEBUG
+	bool "DRM debug synchronization"
+	depends on DRM_MSM
+	default n
+	help
+	  This makes MSM DRM drivers keep track of fence names.
