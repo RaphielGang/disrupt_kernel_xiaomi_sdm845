@@ -16,7 +16,7 @@
  * more details.
  *
  */
-#ifndef 	_LINUX_NVT_TOUCH_H
+#ifndef	_LINUX_NVT_TOUCH_H
 #define		_LINUX_NVT_TOUCH_H
 
 #include <linux/i2c.h>

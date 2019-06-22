@@ -46,9 +46,9 @@
 #if NVT_TOUCH_ESD_PROTECT
 static struct delayed_work nvt_esd_check_work;
 static struct workqueue_struct *nvt_esd_check_wq;
-static unsigned long irq_timer = 0;
-uint8_t esd_check = false;
-uint8_t esd_retry = 0;
+static unsigned long irq_timer;
+uint8_t esd_check;
+uint8_t esd_retry;
 uint8_t esd_retry_max = 5;
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
@@ -122,7 +122,7 @@ const uint16_t gesture_key_array[] = {
 };
 #endif
 
-static uint8_t bTouchIsAwake = 0;
+static uint8_t bTouchIsAwake;
 
 /*******************************************************
 Description:
@@ -573,8 +573,7 @@ static int32_t nvt_flash_close(struct inode *inode, struct file *file)
 {
 	struct nvt_flash_data *dev = file->private_data;
 
-	if (dev)
-		kfree(dev);
+	kfree(dev);
 
 	return 0;
 }
@@ -777,7 +776,7 @@ static int nvt_parse_dt(struct device *dev)
 	}
 
 	retval = of_property_read_u32(np, "novatek,config-array-size",
-				 (u32 *) & ts->config_array_size);
+				 (u32 *) &ts->config_array_size);
 	if (retval) {
 		NVT_LOG("Unable to get array size\n");
 		return retval;
@@ -1568,19 +1567,19 @@ err_pinctrl_get:
 static ssize_t nvt_panel_color_show(struct device *dev,
 				    struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[2]);
+	return scnprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[2]);
 }
 
 static ssize_t nvt_panel_vendor_show(struct device *dev,
 				     struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[6]);
+	return scnprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[6]);
 }
 
 static ssize_t nvt_panel_display_show(struct device *dev,
 				     struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[1]);
+	return scnprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[1]);
 }
 
 static ssize_t nvt_panel_wake_gesture_show(struct device *dev,
@@ -1604,9 +1603,9 @@ static ssize_t nvt_panel_wake_gesture_store(struct device *dev,
 	}
 }
 
-static DEVICE_ATTR(panel_vendor, (S_IRUGO), nvt_panel_vendor_show, NULL);
-static DEVICE_ATTR(panel_color, (S_IRUGO), nvt_panel_color_show, NULL);
-static DEVICE_ATTR(panel_display, (S_IRUGO), nvt_panel_display_show, NULL);
+static DEVICE_ATTR(panel_vendor, (0444), nvt_panel_vendor_show, NULL);
+static DEVICE_ATTR(panel_color, (0444), nvt_panel_color_show, NULL);
+static DEVICE_ATTR(panel_display, (0444), nvt_panel_display_show, NULL);
 static DEVICE_ATTR(wake_gesture, S_IWUSR | S_IRUSR,
 		nvt_panel_wake_gesture_show, nvt_panel_wake_gesture_store);
 
@@ -1747,7 +1746,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	ts->int_trigger_type = INT_TRIGGER_TYPE;
 
 	/*---set input device info.---*/
-	ts->input_dev->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS) ;
+	ts->input_dev->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
 	ts->input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
 	ts->input_dev->propbit[0] = BIT(INPUT_PROP_DIRECT);
 
@@ -1776,11 +1775,12 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 #endif
 
 #if WAKEUP_GESTURE
-	for (retry = 0; retry < (sizeof(gesture_key_array) / sizeof(gesture_key_array[0])); retry++) {
+	for (retry = 0; retry < (ARRAY_SIZE(gesture_key_array)); retry++) {
 		input_set_capability(ts->input_dev, EV_KEY, gesture_key_array[retry]);
 	}
 #endif
-	snprintf(ts->phys, strlen("input/ts"), "input/ts");
+
+	scnprintf(ts->phys, PAGE_SIZE, "input/ts");
 	ts->input_dev->name = NVT_TS_NAME;
 	ts->input_dev->phys = ts->phys;
 	ts->input_dev->id.bustype = BUS_I2C;

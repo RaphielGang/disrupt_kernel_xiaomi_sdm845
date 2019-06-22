@@ -32,7 +32,7 @@
 #define SIZE_64KB 65536
 #define BLOCK_64KB_NUM 4
 
-const struct firmware *fw_entry = NULL;
+const struct firmware *fw_entry;
 
 /*******************************************************
 Description:
@@ -45,7 +45,7 @@ int32_t update_firmware_request(char *filename)
 {
 	int32_t ret = 0;
 
-	if (NULL == filename) {
+	if (filename == NULL) {
 		return -1;
 	}
 
@@ -163,7 +163,7 @@ int32_t Resume_PD(void)
 
 	/* Check 0xAA (Resume Command) */
 	retry = 0;
-	while(1) {
+	while (1) {
 		msleep(1);
 		buf[0] = 0x00;
 		buf[1] = 0x00;
@@ -321,7 +321,7 @@ int32_t Init_BootLoader(void)
 
 	/* Check 0xAA (Initiate Flash Block) */
 	retry = 0;
-	while(1) {
+	while (1) {
 		msleep(1);
 		buf[0] = 0x00;
 		buf[1] = 0x00;
@@ -340,7 +340,7 @@ int32_t Init_BootLoader(void)
 		}
 	}
 
-	NVT_LOG("Init OK \n");
+	NVT_LOG("Init OK\n");
 	msleep(20);
 
 	return 0;
@@ -554,7 +554,7 @@ int32_t Erase_Flash(void)
 		}
 	}
 
-	NVT_LOG("Erase OK \n");
+	NVT_LOG("Erase OK\n");
 	return 0;
 }
 
@@ -640,7 +640,7 @@ int32_t Write_Flash(void)
 		else
 			tmpvalue = (Flash_Address >> 16) + ((Flash_Address >> 8) & 0xFF) + (Flash_Address & 0xFF) + 0x00 + (fw_entry->size - Flash_Address - 1);
 
-		for (k = 0; k < min(fw_entry->size - Flash_Address,(size_t)256); k++)
+		for (k = 0; k < min(fw_entry->size - Flash_Address, (size_t)256); k++)
 			tmpvalue += fw_entry->data[Flash_Address + k];
 
 		tmpvalue = 255 - tmpvalue + 1;
@@ -652,7 +652,7 @@ int32_t Write_Flash(void)
 		buf[3] = ((Flash_Address >> 8) & 0xFF);
 		buf[4] = (Flash_Address & 0xFF);
 		buf[5] = 0x00;
-		buf[6] = min(fw_entry->size - Flash_Address,(size_t)256) - 1;
+		buf[6] = min(fw_entry->size - Flash_Address, (size_t)256) - 1;
 		buf[7] = tmpvalue;
 		ret = CTP_I2C_WRITE(ts->client, I2C_HW_Address, buf, 8);
 		if (ret < 0) {
@@ -723,7 +723,7 @@ int32_t Write_Flash(void)
 	}
 
 	NVT_LOG("Programming...%2d%%\n", 100);
-	NVT_LOG("Program OK         \n");
+	NVT_LOG("Program OK        \n");
 	return 0;
 }
 
@@ -821,7 +821,7 @@ int32_t Verify_Flash(void)
 		}
 	}
 
-	NVT_LOG("Verify OK \n");
+	NVT_LOG("Verify OK\n");
 	return 0;
 }
 
