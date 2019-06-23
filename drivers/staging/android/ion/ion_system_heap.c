@@ -675,7 +675,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
 		}
 	}
 
-	if (totalram_pages  > 4 * (SZ_1G >> PAGE_SHIFT))
+	if (totalram_pages()  > 4 * (SZ_1G >> PAGE_SHIFT))
 		reserved = 2 * cam_mem_reserved;
 	else
 		reserved = cam_mem_reserved;
