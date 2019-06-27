@@ -41,18 +41,6 @@ config ANDROID_LMK_ADJ_RBTREE
 	  Use oom_score_adj rbtree to select the best proecss to kill
 	  when system in low memory status.
 
-config MULTIPLE_LMK
-	bool "Multiple lowmemorykiller"
-	default n
-	---help---
-	Provide multiple kill in LMK routine
-
-config ANDROID_WHETSTONE
-    bool "Android Whetstone"
-    default N
-    ---help---
-        report to whetstone the memory state when reach target limit value.
-
 config ANDROID_VSOC
 	tristate "Android Virtual SoC support"
 	default n
