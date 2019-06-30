@@ -5,6 +5,16 @@ clone:
   depth: 1
 
 steps:
+- name: clone_dependencies
+  image: debian:latest
+  commands:
+    - apt-get update
+    - apt-get install -y git
+    - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
+    - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
+    - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
+    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git arm64cc
+
 - name: do_beryllium
   image: debian:latest
   environment:
@@ -17,10 +27,6 @@ steps:
   commands:
     - apt-get update
     - apt-get install -y ccache bc bash git-core gnupg build-essential zip curl make automake autogen autoconf autotools-dev libtool shtool python m4 gcc libtool zlib1g-dev dash pigz
-    - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
-    - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
-    - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git "/GNU/ARMGCC"
-    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git "/GNU/GCC"
     - ./buildscripts/kernel.sh
   when:
     branch:
@@ -38,10 +44,6 @@ steps:
   commands:
     - apt-get update
     - apt-get install -y ccache bc bash git-core gnupg build-essential zip curl make automake autogen autoconf autotools-dev libtool shtool python m4 gcc libtool zlib1g-dev dash pigz
-    - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
-    - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
-    - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git "${HOME}/GNU/ARMGCC"
-    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git "${HOME}/GNU/GCC"
     - ./buildscripts/kernel.sh
   when:
     branch:
