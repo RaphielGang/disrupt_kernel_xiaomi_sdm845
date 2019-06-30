@@ -1,0 +1,48 @@
+kind: pipeline
+name: Disrupt Kernel Droneship
+
+clone:
+  depth: 1
+
+steps:
+- name: do_beryllium
+  image: debian:latest
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    EXEC: beryllium
+    CC: GCC
+    WORKER: semaphore
+    KERNELDIR: /drone/src/
+  commands:
+    - apt-get update
+    - apt-get install -y ccache bc bash git-core gnupg build-essential zip curl make automake autogen autoconf autotools-dev libtool shtool python m4 gcc libtool zlib1g-dev dash pigz
+    - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
+    - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
+    - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git "/GNU/ARMGCC"
+    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git "/GNU/GCC"
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - common-staging
+
+- name: do_dipper
+  image: debian:latest
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    EXEC: dipper
+    CC: GCC
+    WORKER: semaphore
+    KERNELDIR: /drone/src/
+  commands:
+    - apt-get update
+    - apt-get install -y ccache bc bash git-core gnupg build-essential zip curl make automake autogen autoconf autotools-dev libtool shtool python m4 gcc libtool zlib1g-dev dash pigz
+    - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
+    - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
+    - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git "${HOME}/GNU/ARMGCC"
+    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git "${HOME}/GNU/GCC"
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - common-staging
