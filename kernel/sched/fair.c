@@ -171,6 +171,7 @@ unsigned int sysctl_sched_cfs_bandwidth_slice		= 5000UL;
  * (default: ~20%)
  */
 unsigned int capacity_margin				= 1280;
+unsigned int sysctl_sched_capacity_margin 		= 1078; /* ~5% margin */
 unsigned int sysctl_sched_capacity_margin_down 		= 1205; /* ~15% margin */
 
 #ifdef CONFIG_SCHED_WALT
@@ -5826,6 +5827,7 @@ static unsigned long __cpu_norm_util(unsigned long util, unsigned long capacity)
 static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 {
 	unsigned int util;
+	struct cfs_rq *cfs_rq;
 
 #ifdef CONFIG_SCHED_WALT
 	/*
@@ -5846,7 +5848,6 @@ static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 #ifdef CONFIG_SCHED_WALT
 	util = max_t(long, cpu_util(cpu) - task_util(p), 0);
 #else
-	struct cfs_rq *cfs_rq;
 
 	cfs_rq = &cpu_rq(cpu)->cfs;
 	util = READ_ONCE(cfs_rq->avg.util_avg);
@@ -7139,7 +7140,7 @@ static unsigned long cpu_estimated_capacity(int cpu, struct task_struct *p)
 #else
 static unsigned long cpu_estimated_capacity(int cpu, struct task_struct *p)
 {
-	return cpu_util_wake(cpu, p);
+	return cpu_util_without(cpu, p);
 }
 #endif
 
@@ -10927,7 +10928,8 @@ static inline int on_null_domain(struct rq *rq)
  *   needed, they will kick the idle load balancer, which then does idle
  *   load balancing for all the idle CPUs.
  */
-static inline int find_new_ilb(int type)
+
+static inline int find_new_ilb(void)
 {
 	int ilb = nr_cpu_ids;
 	struct sched_domain *sd;
@@ -10972,13 +10974,13 @@ static inline int find_new_ilb(int type)
  * nohz_load_balancer CPU (if there is one) otherwise fallback to any idle
  * CPU (if there is one).
  */
-static void nohz_balancer_kick(int type)
+static void nohz_balancer_kick(bool only_update)
 {
 	int ilb_cpu;
 
 	nohz.next_balance++;
 
-	ilb_cpu = find_new_ilb(type);
+	ilb_cpu = find_new_ilb();
 
 	if (ilb_cpu >= nr_cpu_ids)
 		return;
@@ -11437,8 +11439,6 @@ static __latent_entropy void run_rebalance_domains(struct softirq_action *h)
  */
 void trigger_load_balance(struct rq *rq)
 {
-	int type = NOHZ_KICK_ANY;
-
 	/* Don't need to rebalance while attached to NULL domain or
 	 * cpu is isolated.
 	 */
