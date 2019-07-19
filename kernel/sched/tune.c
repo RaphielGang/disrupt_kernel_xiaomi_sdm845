@@ -1115,8 +1115,10 @@ static void write_default_values(struct cgroup_subsys_state *css)
 		if (!strcmp(css->cgroup->kn->name, groups[i].name)) {
 			boost_write(css, NULL, groups[i].boost);
 			prefer_idle_write(css, NULL, groups[i].prefer_idle);
+#ifdef CONFIG_SCHED_WALT
 			sched_colocate_write(css, NULL, groups[i].colocate);
 			sched_boost_override_write(css, NULL, groups[i].no_override);
+#endif
 		}
 	}
 }
