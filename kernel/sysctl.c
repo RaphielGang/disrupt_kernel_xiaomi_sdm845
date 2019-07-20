@@ -133,6 +133,9 @@ static int __maybe_unused one_thousand = 1000;
 #ifdef CONFIG_SCHED_WALT
 static int two_million = 2000000;
 #endif
+#ifndef CONFIG_SCHED_WALT
+static int sched_boost;
+#endif
 #ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
 #endif
@@ -341,7 +344,7 @@ static struct ctl_table kern_table[] = {
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
 		.proc_handler	= sched_boost_handler,
-		.extra1         = &zero,
+		.extra1		= &zero,
 		.extra2		= &three,
 	},
 	{
@@ -386,6 +389,15 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= sched_little_cluster_coloc_fmin_khz_handler,
 		.extra1		= &zero,
 		.extra2		= &two_million,
+	},
+#endif
+#ifndef CONFIG_SCHED_WALT
+	{
+		.procname	= "sched_boost",
+		.data		= &sched_boost,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec,
 	},
 #endif
 	{
