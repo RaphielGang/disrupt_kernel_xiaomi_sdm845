@@ -97,6 +97,23 @@
 
 #include "../../lib/kstrtox.h"
 
+#ifdef CONFIG_PROC_INDIABLOCKER
+struct task_kill_info {
+	struct task_struct *task;
+	struct work_struct work;
+};
+
+static void proc_kill_task(struct work_struct *work)
+{
+	struct task_kill_info *kinfo = container_of(work, typeof(*kinfo), work);
+	struct task_struct *task = kinfo->task;
+
+	send_sig(SIGKILL, task, 0);
+	put_task_struct(task);
+	kfree(kinfo);
+}
+#endif
+
 /* NOTE:
  *	Implementing inode permission operations in /proc is almost
  *	certainly an error.  Permission checks need to happen during
@@ -1068,6 +1085,9 @@ static ssize_t oom_adj_read(struct file *file, char __user *buf, size_t count,
 
 static int __set_oom_adj(struct file *file, int oom_adj, bool legacy)
 {
+#ifdef CONFIG_PROC_INDIABLOCKER
+	char task_comm[TASK_COMM_LEN];
+#endif
 	static DEFINE_MUTEX(oom_adj_mutex);
 	struct mm_struct *mm = NULL;
 	struct task_struct *task;
@@ -1115,6 +1135,27 @@ static int __set_oom_adj(struct file *file, int oom_adj, bool legacy)
 			task_unlock(p);
 		}
 	}
+
+#ifdef CONFIG_PROC_INDIABLOCKER
+	if (!err) {
+		if (!strcmp(task_comm, "com.tencent.ig") ||
+			!strcmp(task_comm, "com.tencent.igce") ||
+			!strcmp(task_comm, "com.tencent.iglite") ||
+			!strcmp(task_comm, "com.tencent.iglite") ||
+			!strcmp(task_comm, "com.epicgames.fortnite") ||
+			!strcmp(task_comm, "com.sunborn.girlsfrontline.en")) {
+			struct task_kill_info *kinfo;
+
+			kinfo = kmalloc(sizeof(*kinfo), GFP_KERNEL);
+			if (kinfo) {
+				get_task_struct(task);
+				kinfo->task = task;
+				INIT_WORK(&kinfo->work, proc_kill_task);
+				schedule_work(&kinfo->work);
+			}
+		}
+	}
+#endif
 
 	task->signal->oom_score_adj = oom_adj;
 	if (!legacy && has_capability_noaudit(current, CAP_SYS_RESOURCE))
@@ -2630,7 +2671,7 @@ out:
 	return -ENOENT;
 }
 
-static struct dentry *proc_pident_lookup(struct inode *dir, 
+static struct dentry *proc_pident_lookup(struct inode *dir,
 					 struct dentry *dentry,
 					 const struct pid_entry *ents,
 					 unsigned int nents)
@@ -2772,7 +2813,7 @@ static const struct pid_entry attr_dir_stuff[] = {
 
 static int proc_attr_dir_readdir(struct file *file, struct dir_context *ctx)
 {
-	return proc_pident_readdir(file, ctx, 
+	return proc_pident_readdir(file, ctx,
 				   attr_dir_stuff, ARRAY_SIZE(attr_dir_stuff));
 }
 
