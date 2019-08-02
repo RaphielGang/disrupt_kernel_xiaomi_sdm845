@@ -29,7 +29,7 @@ static uint32_t sensor_read_regs_data;
 extern struct cam_sensor_ctrl_t *g_sctrl[MAX_CAMERAS];
 
 ssize_t mv_operate_sensor_write_regs_store(struct device *dev,
-		struct device_attribute *attr,const char *buf, size_t count)
+		struct device_attribute *attr, const char *buf, size_t count)
 {
 	int rc = 0;
 	struct cam_sensor_ctrl_t  *s_ctrl = dev->driver_data;
@@ -37,14 +37,13 @@ ssize_t mv_operate_sensor_write_regs_store(struct device *dev,
 	struct cam_sensor_i2c_reg_array ir_reg_array;
 
 	if (!s_ctrl) {
-		CAM_ERR(CAM_SENSOR,"%s: can not get the IR camera sensor!\n", __func__);
+		CAM_ERR(CAM_SENSOR, "%s: can not get the IR camera sensor!\n", __func__);
 		return 0;
 	}
 	rc = sscanf(buf, "0x%x 0x%x", &sensor_write_regs_addr, &sensor_write_regs_data);
 	if (rc == 0) {
-		CAM_ERR(CAM_SENSOR,"%s: can not get right IR camera regs!\n", __func__);
-	}
-	else {
+		CAM_ERR(CAM_SENSOR, "%s: can not get right IR camera regs!\n", __func__);
+	} else {
 		ir_write_setting.size =  1;
 		ir_write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 		ir_write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
@@ -56,10 +55,10 @@ ssize_t mv_operate_sensor_write_regs_store(struct device *dev,
 		rc = camera_io_dev_write(&(s_ctrl->io_master_info),
 		&ir_write_setting);
 		if (rc < 0)
-			CAM_ERR(CAM_SENSOR,"%s: can not write IR camera sensor reg!\n", __func__);
+			CAM_ERR(CAM_SENSOR, "%s: can not write IR camera sensor reg!\n", __func__);
 		}
-		CAM_DBG(CAM_SENSOR,"%s: sensor_write_regs_addr = 0x%x, sensor_write_regs_data = 0x%x ",
-			__func__,sensor_write_regs_addr,sensor_write_regs_data);
+		CAM_DBG(CAM_SENSOR, "%s: sensor_write_regs_addr = 0x%x, sensor_write_regs_data = 0x%x ",
+			__func__, sensor_write_regs_addr, sensor_write_regs_data);
 
 		return count;
 }
@@ -71,30 +70,29 @@ ssize_t mv_operate_sensor_write_regs_show(struct device *dev,
 }
 
 ssize_t mv_operate_sensor_read_regs_store(struct device *dev,
-		struct device_attribute *attr,const char *buf, size_t count)
+		struct device_attribute *attr, const char *buf, size_t count)
 {
 	int rc = 0;
 	struct cam_sensor_ctrl_t  *s_ctrl = dev->driver_data;
 
 	if (!s_ctrl) {
-		CAM_ERR(CAM_SENSOR,"%s: can not get the IR camera sensor!\n", __func__);
+		CAM_ERR(CAM_SENSOR, "%s: can not get the IR camera sensor!\n", __func__);
 		return 0;
 	}
 	rc = sscanf(buf, "0x%x", &sensor_read_regs_addr);
 	if (rc == 0) {
-		CAM_ERR(CAM_SENSOR,"%s: can not get right IR camera regs!\n", __func__);
-	}
-	else {
+		CAM_ERR(CAM_SENSOR, "%s: can not get right IR camera regs!\n", __func__);
+	} else {
 		rc = camera_io_dev_read(
 		&(s_ctrl->io_master_info),
 		sensor_read_regs_addr,
 		&sensor_read_regs_data, CAMERA_SENSOR_I2C_TYPE_WORD,
 		CAMERA_SENSOR_I2C_TYPE_BYTE);
 		if (rc < 0)
-			CAM_ERR(CAM_SENSOR,"%s: can not read IR camera sensor reg!\n", __func__);
+			CAM_ERR(CAM_SENSOR, "%s: can not read IR camera sensor reg!\n", __func__);
 		}
-		CAM_DBG(CAM_SENSOR,"%s: sensor_read_regs_addr = 0x%x, sensor_read_regs_data = 0x%x ",
-			__func__,sensor_read_regs_addr,sensor_read_regs_data);
+		CAM_DBG(CAM_SENSOR, "%s: sensor_read_regs_addr = 0x%x, sensor_read_regs_data = 0x%x ",
+			__func__, sensor_read_regs_addr, sensor_read_regs_data);
 
 		return count;
 }
@@ -1092,8 +1090,10 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 
 		luma_data.expo = ((reg_3500 & 0xf) << 8) + ((reg_3501 & 0xff) << 4) + ((reg_3502 & 0xff) >> 4);
 		luma_data.gain = reg_3509;
-		CAM_ERR(CAM_SENSOR, "CAM_IR_LUMA_READ=0x%x, expo=0x%x, gain=0x%x. \n",
-			CAM_IR_LUMA_READ, luma_data.expo, luma_data.gain);
+		CAM_ERR(
+			CAM_SENSOR, "CAM_IR_LUMA_READ=0x%x, expo=0x%x, gain=0x%x.\n", CAM_IR_LUMA_READ,
+			luma_data.expo, luma_data.gain
+		);
 
 		if (copy_to_user((void __user *)cmd->handle, &luma_data, sizeof(luma_data)) || ret != 0) {
 			CAM_ERR(CAM_SENSOR, "Copy state to user space failed\n");
@@ -1266,7 +1266,7 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 
 	if (req_id == 0) {
 		switch (opcode) {
-		CAM_DBG(CAM_SENSOR,"[CDBG] opcode: %d", opcode);
+		CAM_DBG(CAM_SENSOR, "[CDBG] opcode: %d", opcode);
 		case CAM_SENSOR_PACKET_OPCODE_SENSOR_STREAMON: {
 			i2c_set = &s_ctrl->i2c_data.streamon_settings;
 			break;
@@ -1291,9 +1291,9 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 		if (i2c_set->is_settings_valid == 1) {
 			list_for_each_entry(i2c_list,
 				&(i2c_set->list_head), list) {
-				CAM_DBG(CAM_SENSOR,"[CDBG] master type = %d",s_ctrl->io_master_info.master_type);
+				CAM_DBG(CAM_SENSOR, "[CDBG] master type = %d", s_ctrl->io_master_info.master_type);
 				for (i = 0; i < i2c_list->i2c_settings.size; i++) {
-					CAM_DBG(CAM_SENSOR,"[%04d] [CDBG] 0x%04X 0x%04X 0x%02X", i,
+					CAM_DBG(CAM_SENSOR, "[%04d] [CDBG] 0x%04X 0x%04X 0x%02X", i,
 						i2c_list->i2c_settings.reg_setting[i].reg_addr,
 						i2c_list->i2c_settings.reg_setting[i].reg_data,
 						i2c_list->i2c_settings.reg_setting[i].delay);
@@ -1337,8 +1337,8 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 				s_ctrl->i2c_data.per_frame[i].request_id) &&
 				(top <
 				s_ctrl->i2c_data.per_frame[i].request_id) &&
-				(s_ctrl->i2c_data.per_frame[i].
-				is_settings_valid == 1)) {
+				(s_ctrl->i2c_data.per_frame[i].is_settings_valid == 1)
+				) {
 				del_req_id = top;
 				top = s_ctrl->i2c_data.per_frame[i].request_id;
 			}
