@@ -969,18 +969,13 @@ int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 	if (!val.intval)
 		return 0;
 
-	/*
-	rc = smblib_request_dpdm(chg, true);
-	if (rc < 0)
-		smblib_err(chg, "Couldn't to enable DPDM rc=%d\n", rc);
-	*/
-
-	chg->uusb_apsd_rerun_done = true;
-
 	if (!off_charge_flag) {
+
 		rc = smblib_request_dpdm(chg, true);
 		if (rc < 0)
 			smblib_err(chg, "Couldn't to enable DPDM rc=%d\n", rc);
+
+		chg->uusb_apsd_rerun_done = true;
 		smblib_rerun_apsd(chg);
 	} else {
 		apsd_result = smblib_update_usb_type(chg);
@@ -989,6 +984,8 @@ int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 			rc = smblib_request_dpdm(chg, true);
 			if (rc < 0)
 				smblib_err(chg, "Couldn't to enable DPDM rc=%d\n", rc);
+
+			chg->uusb_apsd_rerun_done = true;
 			smblib_rerun_apsd(chg);
 		}
 	}

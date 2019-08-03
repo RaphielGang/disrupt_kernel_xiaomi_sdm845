@@ -641,7 +641,7 @@ struct votable *create_votable(const char *name,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	votable->status_ent = debugfs_create_file("status", S_IFREG | S_IRUGO,
+	votable->status_ent = debugfs_create_file("status", S_IFREG | 0444,
 				  votable->root, votable,
 				  &votable_status_ops);
 	if (!votable->status_ent) {
@@ -653,7 +653,7 @@ struct votable *create_votable(const char *name,
 	}
 
 	votable->force_val_ent = debugfs_create_u32("force_val",
-					S_IFREG | S_IWUSR | S_IRUGO,
+					S_IFREG | 0644,
 					votable->root,
 					&(votable->force_val));
 
@@ -666,7 +666,7 @@ struct votable *create_votable(const char *name,
 	}
 
 	votable->force_active_ent = debugfs_create_file("force_active",
-					S_IFREG | S_IRUGO,
+					S_IFREG | 0444,
 					votable->root, votable,
 					&votable_force_ops);
 	if (!votable->force_active_ent) {
