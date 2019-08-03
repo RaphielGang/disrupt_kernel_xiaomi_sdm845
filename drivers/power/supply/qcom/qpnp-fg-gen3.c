@@ -176,7 +176,7 @@ static void fg_encode_default(struct fg_sram_param *sp,
 static struct fg_irq_info fg_irqs[FG_IRQ_MAX];
 
 #define PARAM(_id, _addr_word, _addr_byte, _len, _num, _den, _offset,	\
-	      _enc, _dec)						\
+		  _enc, _dec)						\
 	[FG_SRAM_##_id] = {						\
 		.addr_word	= _addr_word,				\
 		.addr_byte	= _addr_byte,				\
@@ -2582,7 +2582,7 @@ static int fg_esr_timer_config(struct fg_chip *chip, bool sleep)
 static void fg_esr_timer_config_work(struct work_struct *work)
 {
 	struct fg_chip *chip = container_of(work, struct fg_chip,
-					    esr_timer_config_work.work);
+						esr_timer_config_work.work);
 	int rc;
 
 	rc = fg_esr_timer_config(chip, false);
@@ -2749,8 +2749,7 @@ static void fg_cycle_counter_update(struct fg_chip *chip)
 	/* Find out which bucket the SOC falls in */
 	bucket = batt_soc / BUCKET_SOC_PCT;
 
-	if (chip->batt_psy)
-	{
+	if (chip->batt_psy) {
 		rc = power_supply_get_property(chip->batt_psy, POWER_SUPPLY_PROP_INPUT_SUSPEND,
 				&prop);
 		if (rc < 0) {
@@ -2787,21 +2786,20 @@ out:
 
 static int fg_get_cycle_count(struct fg_chip *chip)
 {
-	int count = 0;
-	int i = 0;
+	int i, len = 0;
 
 	if (!chip->cyc_ctr.en)
 		return 0;
 
-	if ((chip->cyc_ctr.id <= 0) || (chip->cyc_ctr.id > BUCKET_COUNT))
-		return -EINVAL;
-
 	mutex_lock(&chip->cyc_ctr.lock);
 	for (i = 0; i < BUCKET_COUNT; i++)
-		count += chip->cyc_ctr.count[i];
-	count /= BUCKET_COUNT;
+		len += chip->cyc_ctr.count[i];
+
 	mutex_unlock(&chip->cyc_ctr.lock);
-	return count;
+
+	len = len / BUCKET_COUNT;
+
+	return len;
 }
 
 static const char *fg_get_cycle_counts(struct fg_chip *chip)
@@ -3330,8 +3328,8 @@ static void profile_load_work(struct work_struct *work)
 			chip->batt_id_ohms / 1000, rc);
 		goto out;
 	}
-        /*xiaomi move qcom_step_chg_init to fg driver*/
-        qcom_step_chg_init(chip->dev, 0 , 1);
+	/*xiaomi move qcom_step_chg_init to fg driver*/
+	qcom_step_chg_init(chip->dev, 0, 1);
 
 	if (!chip->profile_available)
 		goto out;
@@ -3424,7 +3422,7 @@ out:
 static void sram_dump_work(struct work_struct *work)
 {
 	struct fg_chip *chip = container_of(work, struct fg_chip,
-					    sram_dump_work.work);
+						sram_dump_work.work);
 	u8 buf[FG_SRAM_LEN];
 	int rc;
 	s64 timestamp_ms, quotient;
@@ -4006,7 +4004,7 @@ out:
 static void ttf_work(struct work_struct *work)
 {
 	struct fg_chip *chip = container_of(work, struct fg_chip,
-					    ttf_work.work);
+						ttf_work.work);
 	int rc, ibatt_now, vbatt_now, ttf;
 	ktime_t ktime_now;
 
@@ -4066,8 +4064,8 @@ end_work:
 /* PSY CALLBACKS STAY HERE */
 
 static int fg_psy_get_property(struct power_supply *psy,
-				       enum power_supply_property psp,
-				       union power_supply_propval *pval)
+					   enum power_supply_property psp,
+					   union power_supply_propval *pval)
 {
 	struct fg_chip *chip = power_supply_get_drvdata(psy);
 	int rc = 0;
@@ -5804,43 +5802,43 @@ static void soc_work_fn(struct work_struct *work)
 
 static void empty_restart_fg_work(struct work_struct *work)
 {
-        struct fg_chip *chip = container_of(work,
-                                struct fg_chip,
-                                empty_restart_fg_work.work);
-        union power_supply_propval prop = {0, };
-        int usb_present = 0;
-        int rc;
+		struct fg_chip *chip = container_of(work,
+								struct fg_chip,
+								empty_restart_fg_work.work);
+		union power_supply_propval prop = {0, };
+		int usb_present = 0;
+		int rc;
 
-        if (usb_psy_initialized(chip)) {
-                rc = power_supply_get_property(chip->usb_psy,
-                        POWER_SUPPLY_PROP_PRESENT, &prop);
-                if (rc < 0) {
-                        pr_err("Couldn't read usb present prop rc=%d\n", rc);
-                        return;
-                }
-                usb_present = prop.intval;
-        }
+		if (usb_psy_initialized(chip)) {
+			rc = power_supply_get_property(chip->usb_psy,
+				POWER_SUPPLY_PROP_PRESENT, &prop);
+			if (rc < 0) {
+				pr_err("Couldn't read usb present prop rc=%d\n", rc);
+				return;
+			}
+			usb_present = prop.intval;
+		}
 
-        /* only when usb is absent, restart fg */
-        if (!usb_present) {
-                if (chip->profile_loaded) {
-                        pr_info("soc empty after cold to warm, need to restart fg\n");
-                        chip->empty_restart_fg = true;
-                        rc = __fg_restart(chip);
-                        if (rc < 0) {
-                                pr_err("Error in restarting FG, rc=%d\n", rc);
-                                chip->empty_restart_fg = false;
-                                return;
-                        }
-                        pr_info("FG restart done\n");
-                        if (batt_psy_initialized(chip))
-                                power_supply_changed(chip->batt_psy);
-                } else {
-                        schedule_delayed_work(
-                                        &chip->empty_restart_fg_work,
-                                        msecs_to_jiffies(RESTART_FG_WORK_MS));
-                }
-        }
+		/* only when usb is absent, restart fg */
+		if (!usb_present) {
+			if (chip->profile_loaded) {
+				pr_info("soc empty after cold to warm, need to restart fg\n");
+				chip->empty_restart_fg = true;
+				rc = __fg_restart(chip);
+				if (rc < 0) {
+					pr_err("Error in restarting FG, rc=%d\n", rc);
+					chip->empty_restart_fg = false;
+					return;
+					}
+				pr_info("FG restart done\n");
+				if (batt_psy_initialized(chip))
+					power_supply_changed(chip->batt_psy);
+			} else {
+				schedule_delayed_work(
+					&chip->empty_restart_fg_work,
+					msecs_to_jiffies(RESTART_FG_WORK_MS));
+			}
+		}
 }
 
 static int calculate_delta_time(struct timespec *time_stamp, int *delta_time_s)
@@ -5928,8 +5926,8 @@ static void fg_battery_soc_smooth_tracking(struct fg_chip *chip)
 	soc_changed = min(1, delta_time);
 
 	if (last_batt_soc >= 0) {
-		if (last_batt_soc < chip->param.batt_raw_soc &&
-					chip->param.batt_ma < 0)
+		if (last_batt_soc < chip->param.batt_raw_soc
+			&& chip->param.batt_ma < 0)
 		  /* Battery in charging status
 		   * update the soc when resuming device
 		   */
@@ -5941,7 +5939,7 @@ static void fg_battery_soc_smooth_tracking(struct fg_chip *chip)
 		   * update the soc when resuming device
 		   */
 		  last_batt_soc = chip->param.update_now ?
-			  chip->param.batt_raw_soc : last_batt_soc - soc_changed;
+					chip->param.batt_raw_soc : last_batt_soc - soc_changed;
 		else if (last_batt_soc != 100
 					&& chip->param.batt_raw_soc >= 95
 					&& chip->charge_status == POWER_SUPPLY_STATUS_FULL)
@@ -6284,15 +6282,15 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	schedule_delayed_work(&chip->soc_monitor_work,
 				msecs_to_jiffies(MONITOR_SOC_WAIT_MS));
 	/*
-         * if vbat is above 3.7V and msoc is 0% and battery temperature is
-         * above 15 degree, we restart fg to do new first soc calculate to
-         * improve user experience when device is shutdown in cold then
-         * try to power on in normal temperature room.
-         */
-        if ((volt_uv >= VBAT_RESTART_FG_EMPTY_UV)
-                        && (msoc == 0) && (batt_temp >= TEMP_THR_RESTART_FG))
-                schedule_delayed_work(&chip->empty_restart_fg_work,
-                                        msecs_to_jiffies(RESTART_FG_START_WORK_MS));
+	 * if vbat is above 3.7V and msoc is 0% and battery temperature is
+	 * above 15 degree, we restart fg to do new first soc calculate to
+	 * improve user experience when device is shutdown in cold then
+	 * try to power on in normal temperature room.
+	 */
+	if ((volt_uv >= VBAT_RESTART_FG_EMPTY_UV)
+			&& (msoc == 0) && (batt_temp >= TEMP_THR_RESTART_FG))
+		schedule_delayed_work(&chip->empty_restart_fg_work,
+			msecs_to_jiffies(RESTART_FG_START_WORK_MS));
 
 	pr_debug("FG GEN3 driver probed successfully\n");
 	return 0;
@@ -6323,8 +6321,12 @@ static int fg_gen3_suspend(struct device *dev)
 static int fg_gen3_resume(struct device *dev)
 {
 	struct fg_chip *chip = dev_get_drvdata(dev);
+	int rc;
 
-	schedule_delayed_work(&chip->esr_timer_config_work, 0);
+	rc = fg_esr_timer_config(chip, false);
+	if (rc < 0)
+		pr_err("Error in configuring ESR timer, rc=%d\n", rc);
+
 	schedule_delayed_work(&chip->ttf_work, 0);
 	if (fg_sram_dump)
 		schedule_delayed_work(&chip->sram_dump_work,
