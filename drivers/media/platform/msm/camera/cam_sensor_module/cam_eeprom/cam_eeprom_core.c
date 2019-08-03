@@ -132,26 +132,30 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 					rc);
 				return rc;
 			}
+#ifdef CONFIG_USE_ROHM_BU64753
+			if ((memptr != NULL) &&
+				(memptr[1] == LITEON_VENDOR_ID) &&
+				(emap[j].saddr == BACK_CAMERA_LILTEON_EEPROM_ADDR) &&
+				(emap[j].mem.valid_size >=
+				(EEPROM_READ_START_INDEX + EEPROM_MAP_DATA_CNT))) {
+				memset(
+					g_eeprom_mapdata,
+					0,
+					ARRAY_SIZE(g_eeprom_mapdata)
+				);
+				memcpy(
+					g_eeprom_mapdata,
+					memptr+EEPROM_READ_START_INDEX,
+					EEPROM_MAP_DATA_CNT
+					);
+			}
 			memptr += emap[j].mem.valid_size;
 		}
-
-#ifdef CONFIG_USE_ROHM_BU64753
-		if ((memptr != NULL) &&
-			(memptr[1] == LITEON_VENDOR_ID) &&
-			(emap[j].saddr == BACK_CAMERA_LILTEON_EEPROM_ADDR) &&
-			(emap[j].mem.valid_size >=
-			(EEPROM_READ_START_INDEX + EEPROM_MAP_DATA_CNT))) {
-			memset(
-				g_eeprom_mapdata,
-				0,
-				ARRAY_SIZE(g_eeprom_mapdata)
-			);
-			memcpy(
-				g_eeprom_mapdata,
-				memptr+EEPROM_READ_START_INDEX,
-				EEPROM_MAP_DATA_CNT
-				);
 #else
+			memptr += emap[j].mem.valid_size;
+		}
+#endif
+
 		if (emap[j].pageen.valid_size) {
 			i2c_reg_settings.addr_type = emap[j].pageen.addr_type;
 			i2c_reg_settings.data_type = emap[j].pageen.data_type;
@@ -169,7 +173,6 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 				return rc;
 			}
 		}
-#endif
 	}
 	return rc;
 }
@@ -902,12 +905,14 @@ static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 		e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
 		vfree(e_ctrl->cal_data.mapdata);
 		vfree(e_ctrl->cal_data.map);
+#ifndef CONFIG_USE_ROHM_BU64753
 		kfree(power_info->power_setting);
 		kfree(power_info->power_down_setting);
 		power_info->power_setting = NULL;
 		power_info->power_down_setting = NULL;
 		power_info->power_setting_size = 0;
 		power_info->power_down_setting_size = 0;
+#endif
 		e_ctrl->cal_data.num_data = 0;
 		e_ctrl->cal_data.num_map = 0;
 		break;
@@ -922,8 +927,10 @@ memdata_free:
 error:
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
+#ifndef CONFIG_USE_ROHM_BU64753
 	power_info->power_setting = NULL;
 	power_info->power_down_setting = NULL;
+#endif
 	vfree(e_ctrl->cal_data.map);
 	e_ctrl->cal_data.num_data = 0;
 	e_ctrl->cal_data.num_map = 0;
@@ -959,10 +966,12 @@ void cam_eeprom_shutdown(struct cam_eeprom_ctrl_t *e_ctrl)
 
 		kfree(power_info->power_setting);
 		kfree(power_info->power_down_setting);
+#ifndef CONFIG_USE_ROHM_BU64753
 		power_info->power_setting = NULL;
 		power_info->power_down_setting = NULL;
 		power_info->power_setting_size = 0;
 		power_info->power_down_setting_size = 0;
+#endif
 	}
 
 	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
