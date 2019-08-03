@@ -454,7 +454,8 @@ static int smb2_parse_dt(struct smb2 *chip)
 					&chg->otg_delay_ms);
 	if (rc < 0)
 		chg->otg_delay_ms = OTG_DEFAULT_DEGLITCH_TIME_MS;
-		rc = of_property_read_u32(node, "qcom,fcc-low-temp-delta",
+
+	rc = of_property_read_u32(node, "qcom,fcc-low-temp-delta",
 				&chip->dt.jeita_low_cc_delta);
 	if (rc < 0)
 		chip->dt.jeita_low_cc_delta = DEFAULT_CRITICAL_JEITA_CCOMP;
@@ -1786,8 +1787,7 @@ static int smb2_configure_typec(struct smb_charger *chg)
 	 * over-current happens
 	 */
 	rc = smblib_masked_write(chg, TYPE_C_CFG_REG,
-			FACTORY_MODE_DETECTION_EN_BIT
-			| VCONN_OC_CFG_BIT, 0);
+			FACTORY_MODE_DETECTION_EN_BIT | VCONN_OC_CFG_BIT, 0);
 	if (rc < 0) {
 		dev_err(chg->dev, "Couldn't configure Type-C rc=%d\n", rc);
 		return rc;
