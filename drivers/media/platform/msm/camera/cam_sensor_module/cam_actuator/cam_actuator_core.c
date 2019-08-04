@@ -673,7 +673,7 @@ int32_t cam_actuator_slaveInfo_pkt_parser(struct cam_actuator_ctrl_t *a_ctrl,
 			i2c_info->i2c_freq_mode;
 		a_ctrl->io_master_info.cci_client->sid =
 			i2c_info->slave_addr >> 1;
-#ifdef CONFIG_USE_BU64748
+#ifdef CONFIG_USE_ROHM_BU64753
 		a_ctrl->io_master_info.cci_client->retries = 3;
 		a_ctrl->io_master_info.cci_client->id_map = 0;
 #endif
