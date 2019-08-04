@@ -652,7 +652,12 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
-
+#ifndef MV_TEMP_SET
+	power_info->power_setting = NULL;
+	power_info->power_down_setting = NULL;
+	power_info->power_setting_size = 0;
+	power_info->power_down_setting_size = 0;
+#endif
 	s_ctrl->streamon_count = 0;
 	s_ctrl->streamoff_count = 0;
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
@@ -1103,8 +1108,17 @@ release_mutex:
 	return rc;
 
 free_power_settings:
+#if MV_TEMP_SET
 	kfree(pu);
 	kfree(pd);
+#else
+	kfree(power_info->power_setting);
+	kfree(power_info->power_down_setting);
+	power_info->power_setting = NULL;
+	power_info->power_down_setting = NULL;
+	power_info->power_down_setting_size = 0;
+	power_info->power_setting_size = 0;
+#endif
 	mutex_unlock(&(s_ctrl->cam_sensor_mutex));
 	return rc;
 }
