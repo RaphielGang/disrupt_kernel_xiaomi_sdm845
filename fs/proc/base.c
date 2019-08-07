@@ -1141,8 +1141,8 @@ static int __set_oom_adj(struct file *file, int oom_adj, bool legacy)
 		if (!strcmp(task_comm, "com.tencent.ig") ||
 			!strcmp(task_comm, "com.tencent.igce") ||
 			!strcmp(task_comm, "com.tencent.iglite") ||
-			!strcmp(task_comm, "com.tencent.iglite") ||
-			!strcmp(task_comm, "com.epicgames.fortnite") ||
+			!strcmp(task_comm, "com.zhiliaoapp.musically") ||
+			!strcmp(task_comm, "com.ss.android.ugc.trill") ||
 			!strcmp(task_comm, "com.sunborn.girlsfrontline.en")) {
 			struct task_kill_info *kinfo;
 
