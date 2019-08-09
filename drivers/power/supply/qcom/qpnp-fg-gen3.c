@@ -176,7 +176,7 @@ static void fg_encode_default(struct fg_sram_param *sp,
 static struct fg_irq_info fg_irqs[FG_IRQ_MAX];
 
 #define PARAM(_id, _addr_word, _addr_byte, _len, _num, _den, _offset,	\
-		  _enc, _dec)						\
+	      _enc, _dec)						\
 	[FG_SRAM_##_id] = {						\
 		.addr_word	= _addr_word,				\
 		.addr_byte	= _addr_byte,				\
@@ -429,8 +429,6 @@ module_param_named(
 
 static int fg_restart;
 static bool fg_sram_dump;
-
-#define FG_RATE_LIM_MS (5 * MSEC_PER_SEC)
 
 /* All getters HERE */
 
@@ -2190,27 +2188,48 @@ static int fg_adjust_recharge_soc(struct fg_chip *chip)
 	 * the recharge SOC threshold based on the monotonic SOC at which
 	 * the charge termination had happened.
 	 */
-	if (is_input_present(chip) && !chip->recharge_soc_adjusted
-			&& chip->charge_done) {
-		if (chip->health == POWER_SUPPLY_HEALTH_GOOD)
-			return 0;
-		/* Get raw monotonic SOC for calculation */
-		rc = fg_get_msoc(chip, &msoc);
-		if (rc < 0) {
-			pr_err("Error in getting msoc, rc=%d\n", rc);
-			return rc;
-		}
+	if (is_input_present(chip)) {
+		if (chip->charge_done) {
+			if (!chip->recharge_soc_adjusted) {
+				/* Get raw monotonic SOC for calculation */
+				rc = fg_get_msoc(chip, &msoc);
+				if (rc < 0) {
+					pr_err("Error in getting msoc, rc=%d\n",
+						rc);
+					return rc;
+				}
 
-		/* Adjust the recharge_soc threshold */
-		new_recharge_soc = msoc - (FULL_CAPACITY - recharge_soc);
-		chip->recharge_soc_adjusted = true;
-	} else if ((!is_input_present(chip) || chip->health == POWER_SUPPLY_HEALTH_GOOD)
-					&& chip->recharge_soc_adjusted) {
+				/* Adjust the recharge_soc threshold */
+				new_recharge_soc = msoc - (FULL_CAPACITY -
+								recharge_soc);
+				chip->recharge_soc_adjusted = true;
+			} else {
+				/* adjusted already, do nothing */
+				if (chip->health != POWER_SUPPLY_HEALTH_GOOD)
+					return 0;
+
+				/*
+				 * Device is out of JEITA so restore the
+				 * default value
+				 */
+				new_recharge_soc = recharge_soc;
+				chip->recharge_soc_adjusted = false;
+			}
+		} else {
+			if (!chip->recharge_soc_adjusted)
+				return 0;
+
+			if (chip->health != POWER_SUPPLY_HEALTH_GOOD)
+				return 0;
+
+			/* Restore the default value */
+			new_recharge_soc = recharge_soc;
+			chip->recharge_soc_adjusted = false;
+		}
+	} else {
 		/* Restore the default value */
 		new_recharge_soc = recharge_soc;
 		chip->recharge_soc_adjusted = false;
-	} else {
-		return 0;
 	}
 
 	rc = fg_set_recharge_soc(chip, new_recharge_soc);
@@ -3443,7 +3462,7 @@ out:
 static void sram_dump_work(struct work_struct *work)
 {
 	struct fg_chip *chip = container_of(work, struct fg_chip,
-						sram_dump_work.work);
+					    sram_dump_work.work);
 	u8 buf[FG_SRAM_LEN];
 	int rc;
 	s64 timestamp_ms, quotient;
@@ -4025,7 +4044,7 @@ out:
 static void ttf_work(struct work_struct *work)
 {
 	struct fg_chip *chip = container_of(work, struct fg_chip,
-						ttf_work.work);
+					    ttf_work.work);
 	int rc, ibatt_now, vbatt_now, ttf;
 	ktime_t ktime_now;
 
@@ -4085,46 +4104,15 @@ end_work:
 /* PSY CALLBACKS STAY HERE */
 
 static int fg_psy_get_property(struct power_supply *psy,
-					   enum power_supply_property psp,
-					   union power_supply_propval *pval)
+				       enum power_supply_property psp,
+				       union power_supply_propval *pval)
 {
 	struct fg_chip *chip = power_supply_get_drvdata(psy);
-	struct fg_saved_data *sd = chip->saved_data + psp;
-	union power_supply_propval typec_sts = { .intval = -1 };
 	int rc = 0;
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-	case POWER_SUPPLY_PROP_RESISTANCE_ID:
-	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-	case POWER_SUPPLY_PROP_CYCLE_COUNT_ID:
-	case POWER_SUPPLY_PROP_CHARGE_NOW:
-	case POWER_SUPPLY_PROP_CHARGE_FULL:
-	case POWER_SUPPLY_PROP_SOC_REPORTING_READY:
-		/* These props don't require a fg query; don't ratelimit them */
-		break;
-	default:
-		if (!sd->last_req_expires)
-			break;
-
-		if (usb_psy_initialized(chip))
-			power_supply_get_property(chip->usb_psy,
-				POWER_SUPPLY_PROP_TYPEC_MODE, &typec_sts);
-
-		if (typec_sts.intval == POWER_SUPPLY_TYPEC_NONE &&
-			time_before(jiffies, sd->last_req_expires)) {
-			*pval = sd->val;
-			return 0;
-		}
-		break;
-	}
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_CAPACITY:
 		rc = fg_get_prop_capacity(chip, &pval->intval);
-
-		if (chip->param.batt_soc >= 0)
-			pval->intval = chip->param.batt_soc;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY_RAW:
 		rc = fg_get_msoc_raw(chip, &pval->intval);
@@ -4254,9 +4242,6 @@ static int fg_psy_get_property(struct power_supply *psy,
 
 	if (rc < 0)
 		return -ENODATA;
-
-	sd->val = *pval;
-	sd->last_req_expires = jiffies + msecs_to_jiffies(FG_RATE_LIM_MS);
 
 	return 0;
 }
@@ -5540,12 +5525,6 @@ static int fg_parse_dt(struct fg_chip *chip)
 			pr_warn("Error reading Jeita thresholds, default values will be used rc:%d\n",
 				rc);
 	}
-	pr_info("%s: jeita threshold %d, %d, %d, %d\n", __func__,
-						chip->dt.jeita_thresholds[JEITA_COLD],
-						chip->dt.jeita_thresholds[JEITA_COOL],
-						chip->dt.jeita_thresholds[JEITA_WARM],
-						chip->dt.jeita_thresholds[JEITA_HOT]);
-
 
 	if (of_property_count_elems_of_size(node,
 		"qcom,battery-thermal-coefficients",
