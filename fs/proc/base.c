@@ -1085,9 +1085,6 @@ static ssize_t oom_adj_read(struct file *file, char __user *buf, size_t count,
 
 static int __set_oom_adj(struct file *file, int oom_adj, bool legacy)
 {
-#ifdef CONFIG_PROC_INDIABLOCKER
-	char task_comm[TASK_COMM_LEN];
-#endif
 	static DEFINE_MUTEX(oom_adj_mutex);
 	struct mm_struct *mm = NULL;
 	struct task_struct *task;
@@ -1135,27 +1132,6 @@ static int __set_oom_adj(struct file *file, int oom_adj, bool legacy)
 			task_unlock(p);
 		}
 	}
-
-#ifdef CONFIG_PROC_INDIABLOCKER
-	if (!err) {
-		if (!strcmp(task_comm, "com.tencent.ig") ||
-			!strcmp(task_comm, "com.tencent.igce") ||
-			!strcmp(task_comm, "com.tencent.iglite") ||
-			!strcmp(task_comm, "com.zhiliaoapp.musically") ||
-			!strcmp(task_comm, "com.ss.android.ugc.trill") ||
-			!strcmp(task_comm, "com.sunborn.girlsfrontline.en")) {
-			struct task_kill_info *kinfo;
-
-			kinfo = kmalloc(sizeof(*kinfo), GFP_KERNEL);
-			if (kinfo) {
-				get_task_struct(task);
-				kinfo->task = task;
-				INIT_WORK(&kinfo->work, proc_kill_task);
-				schedule_work(&kinfo->work);
-			}
-		}
-	}
-#endif
 
 	task->signal->oom_score_adj = oom_adj;
 	if (!legacy && has_capability_noaudit(current, CAP_SYS_RESOURCE))
@@ -1264,6 +1240,10 @@ static ssize_t oom_score_adj_read(struct file *file, char __user *buf,
 static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 					size_t count, loff_t *ppos)
 {
+#ifdef CONFIG_PROC_INDIABLOCKER
+	char task_comm[TASK_COMM_LEN];
+	struct task_struct *task = get_proc_task(file_inode(file));
+#endif
 	char buffer[PROC_NUMBUF];
 	int oom_score_adj;
 	int err;
@@ -1287,6 +1267,30 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 
 	err = __set_oom_adj(file, oom_score_adj, false);
 out:
+#ifdef CONFIG_PROC_INDIABLOCKER
+	if (!err) {
+		if (
+			/* PUBG */
+			!strcmp(task_comm, "com.tencent.igce") ||
+			!strcmp(task_comm, "com.tencent.ig") ||
+			!strcmp(task_comm, "com.tencent.iglite") ||
+			/* TikTok */
+			!strcmp(task_comm, "com.zhiliaoapp.musically") ||
+			!strcmp(task_comm, "com.ss.android.ugc.trill") ||
+			/* The Game Of Peace (Another Version Of PUBG) */
+			!strcmp(task_comm, "com.tencent.tmgp.pubgmhd")) {
+			struct task_kill_info *kinfo;
+
+			kinfo = kmalloc(sizeof(*kinfo), GFP_KERNEL);
+			if (kinfo) {
+				get_task_struct(task);
+				kinfo->task = task;
+				INIT_WORK(&kinfo->work, proc_kill_task);
+				schedule_work(&kinfo->work);
+			}
+		}
+	}
+#endif
 	return err < 0 ? err : count;
 }
 

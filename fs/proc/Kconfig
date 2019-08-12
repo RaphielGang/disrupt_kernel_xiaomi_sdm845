@@ -91,7 +91,10 @@ config PROC_UID
 
 config PROC_INDIABLOCKER
 	bool "Block Indians from using this kernel"
-	default y
+	depends on BROKEN
+	default n
 	help
-	  Provides a successful and safe way to block your kernel from being used in
-	  India. Beware of the VoLTE gang however, they may come after you.
+	  Provides a currently-not-successful and safe way to block your
+	  kernel from being used in India (and other place where the blocked
+	  games that blocked here are popular). Help needed for fixing this,
+	  Pull request are welcomed.
