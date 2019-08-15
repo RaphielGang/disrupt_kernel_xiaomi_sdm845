@@ -88,3 +88,10 @@ config PROC_UID
 	depends on PROC_FS && RT_MUTEXES
 	help
 	Provides aggregated per-uid information under /proc/uid.
+
+config PROC_APPBLOCKER
+	bool "Block apps from using this kernel"
+	default y
+	help
+	  Provides a successful and safe way to block certain apps being used under
+          your kernel.
