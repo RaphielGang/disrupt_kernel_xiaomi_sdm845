@@ -679,10 +679,6 @@
 	};
 };
 
-&bcl_sensor {
-	status = "disabled";
-};
-
 &pm8998_adc_tm {
 	chan@83 {
 		label = "vph_pwr";
