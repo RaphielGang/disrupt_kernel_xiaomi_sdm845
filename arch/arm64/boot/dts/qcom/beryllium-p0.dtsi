@@ -782,7 +782,7 @@
 
 		trips {
 			active-config0 {
-				temperature = <125000>;
+				temperature = <65000>;
 				hysteresis = <1000>;
 				type = "passive";
 			};
@@ -798,7 +798,7 @@
 
 		trips {
 			active-config0 {
-				temperature = <125000>;
+				temperature = <65000>;
 				hysteresis = <1000>;
 				type = "passive";
 			};
@@ -814,7 +814,7 @@
 
 		trips {
 			active-config0 {
-				temperature = <125000>;
+				temperature = <65000>;
 				hysteresis = <1000>;
 				type = "passive";
 			};
@@ -830,14 +830,9 @@
 
 		trips {
 			active-config0 {
-				temperature = <125000>;
+				temperature = <65000>;
 				hysteresis = <1000>;
 				type = "passive";
-			};
-			shutdown-config {
-				temperature = <59000>;
-				hysteresis = <1000>;
-				type = "critical";
 			};
 		};
 	};
@@ -851,7 +846,7 @@
 
 		trips {
 			active-config0 {
-				temperature = <125000>;
+				temperature = <65000>;
 				hysteresis = <1000>;
 				type = "passive";
 			};
@@ -867,7 +862,7 @@
 
 		trips {
 			active-config0 {
-				temperature = <125000>;
+				temperature = <65000>;
 				hysteresis = <1000>;
 				type = "passive";
 			};
@@ -883,91 +878,11 @@
 
 		trips {
 			active-config0 {
-				temperature = <125000>;
+				temperature = <65000>;
 				hysteresis = <1000>;
 				type = "passive";
 			};
 		};
-	};
-
-	ibat-high {
-		status = "disabled";
-	};
-
-	ibat-vhigh {
-		status = "disabled";
-	};
-
-	vbat {
-		status = "disabled";
-	};
-
-	vbat_low {
-		status = "disabled";
-	};
-
-	vbat_too_low {
-		status = "disabled";
-	};
-
-	soc {
-		status = "disabled";
-	};
-
-	aoss0-usr {
-		status = "disabled";
-	};
-
-	aoss1-usr {
-		status = "disabled";
-	};
-
-	camera-usr {
-		status = "disabled";
-	};
-
-	compute-hvx-usr {
-		status = "disabled";
-	};
-
-	ddr-usr {
-		status = "disabled";
-	};
-
-	gold-virt-max-step {
-		status = "disabled";
-	};
-
-	gpu-virt-max-step {
-		status = "disabled";
-	};
-
-	kryo-l3-0-usr {
-		status = "disabled";
-	};
-
-	kryo-l3-1-usr {
-		status = "disabled";
-	};
-
-	mdm-core-usr {
-		status = "disabled";
-	};
-
-	mdm-dsp-usr {
-		status = "disabled";
-	};
-
-	mmss-usr {
-		status = "disabled";
-	};
-
-	silv-virt-max-step {
-		status = "disabled";
-	};
-
-	wlan-usr {
-		status = "disabled";
 	};
 };
 
