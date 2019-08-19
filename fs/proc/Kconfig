@@ -88,13 +88,3 @@ config PROC_UID
 	depends on PROC_FS && RT_MUTEXES
 	help
 	Provides aggregated per-uid information under /proc/uid.
-
-config PROC_INDIABLOCKER
-	bool "Block Indians from using this kernel"
-	depends on BROKEN
-	default n
-	help
-	  Provides a currently-not-successful and safe way to block your
-	  kernel from being used in India (and other place where the blocked
-	  games that blocked here are popular). Help needed for fixing this,
-	  Pull request are welcomed.

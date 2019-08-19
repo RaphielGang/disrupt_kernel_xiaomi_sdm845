@@ -97,23 +97,6 @@
 
 #include "../../lib/kstrtox.h"
 
-#ifdef CONFIG_PROC_INDIABLOCKER
-struct task_kill_info {
-	struct task_struct *task;
-	struct work_struct work;
-};
-
-static void proc_kill_task(struct work_struct *work)
-{
-	struct task_kill_info *kinfo = container_of(work, typeof(*kinfo), work);
-	struct task_struct *task = kinfo->task;
-
-	send_sig(SIGKILL, task, 0);
-	put_task_struct(task);
-	kfree(kinfo);
-}
-#endif
-
 /* NOTE:
  *	Implementing inode permission operations in /proc is almost
  *	certainly an error.  Permission checks need to happen during
@@ -1240,10 +1223,6 @@ static ssize_t oom_score_adj_read(struct file *file, char __user *buf,
 static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 					size_t count, loff_t *ppos)
 {
-#ifdef CONFIG_PROC_INDIABLOCKER
-	char task_comm[TASK_COMM_LEN];
-	struct task_struct *task = get_proc_task(file_inode(file));
-#endif
 	char buffer[PROC_NUMBUF];
 	int oom_score_adj;
 	int err;
@@ -1267,30 +1246,6 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 
 	err = __set_oom_adj(file, oom_score_adj, false);
 out:
-#ifdef CONFIG_PROC_INDIABLOCKER
-	if (!err) {
-		if (
-			/* PUBG */
-			!strcmp(task_comm, "com.tencent.igce") ||
-			!strcmp(task_comm, "com.tencent.ig") ||
-			!strcmp(task_comm, "com.tencent.iglite") ||
-			/* TikTok */
-			!strcmp(task_comm, "com.zhiliaoapp.musically") ||
-			!strcmp(task_comm, "com.ss.android.ugc.trill") ||
-			/* The Game Of Peace (Another Version Of PUBG) */
-			!strcmp(task_comm, "com.tencent.tmgp.pubgmhd")) {
-			struct task_kill_info *kinfo;
-
-			kinfo = kmalloc(sizeof(*kinfo), GFP_KERNEL);
-			if (kinfo) {
-				get_task_struct(task);
-				kinfo->task = task;
-				INIT_WORK(&kinfo->work, proc_kill_task);
-				schedule_work(&kinfo->work);
-			}
-		}
-	}
-#endif
 	return err < 0 ? err : count;
 }
 
@@ -2675,7 +2630,7 @@ out:
 	return -ENOENT;
 }
 
-static struct dentry *proc_pident_lookup(struct inode *dir,
+static struct dentry *proc_pident_lookup(struct inode *dir, 
 					 struct dentry *dentry,
 					 const struct pid_entry *ents,
 					 unsigned int nents)
@@ -2817,7 +2772,7 @@ static const struct pid_entry attr_dir_stuff[] = {
 
 static int proc_attr_dir_readdir(struct file *file, struct dir_context *ctx)
 {
-	return proc_pident_readdir(file, ctx,
+	return proc_pident_readdir(file, ctx, 
 				   attr_dir_stuff, ARRAY_SIZE(attr_dir_stuff));
 }
 
