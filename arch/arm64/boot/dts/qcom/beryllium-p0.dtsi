@@ -431,23 +431,6 @@
        };
 
 };
-/*
-&qupv3_se10_i2c {
-	status = "ok";
-	idtp9220@61 {
-		compatible = "idt,p9220";
-		reg = <0x61>;
-		idt,irq = <&tlmm 78 0x00>;
-		//idt,enable = <&tlmm 36 0x00>;
-		interrupt-parent = <&tlmm>;
-		interrupts = <78 0>;
-		interrupt-names = "idt_irq";
-		pinctrl-names = "idt_active", "idt_suspend";
-		pinctrl-0 = <&idt_int_active &idt_enable_active>;
-		pinctrl-1 = <&idt_int_suspend &idt_enable_suspend>;
-	};
-};
-*/
 
 &qupv3_se10_i2c {
 	status = "ok";
@@ -774,6 +757,7 @@
 		polling-delay = <0>;
 		thermal-sensors = <&pm8998_adc_tm 0x4c>;
 		thermal-governor = "user_space";
+		wake-capable-sensor;
 
 		trips {
 			active-config0 {
@@ -789,6 +773,7 @@
 		polling-delay = <0>;
 		thermal-sensors = <&pm8998_adc_tm 0x4d>;
 		thermal-governor = "user_space";
+		wake-capable-sensor;
 
 		trips {
 			active-config0 {
@@ -804,6 +789,7 @@
 		polling-delay = <0>;
 		thermal-sensors = <&pm8998_adc_tm 0x4e>;
 		thermal-governor = "user_space";
+		wake-capable-sensor;
 
 		trips {
 			active-config0 {
@@ -819,6 +805,7 @@
 		polling-delay = <0>;
 		thermal-sensors = <&pm8998_adc_tm 0x4f>;
 		thermal-governor = "user_space";
+		wake-capable-sensor;
 
 		trips {
 			active-config0 {
@@ -834,6 +821,7 @@
 		polling-delay = <0>;
 		thermal-sensors = <&pm8998_adc_tm 0x50>;
 		thermal-governor = "user_space";
+		wake-capable-sensor;
 
 		trips {
 			active-config0 {
@@ -849,6 +837,7 @@
 		polling-delay = <0>;
 		thermal-sensors = <&pm8998_adc_tm 0x51>;
 		thermal-governor = "user_space";
+		wake-capable-sensor;
 
 		trips {
 			active-config0 {
@@ -864,6 +853,7 @@
 		polling-delay = <0>;
 		thermal-sensors = <&pm8998_adc_tm 0x52>;
 		thermal-governor = "user_space";
+		wake-capable-sensor;
 
 		trips {
 			active-config0 {
