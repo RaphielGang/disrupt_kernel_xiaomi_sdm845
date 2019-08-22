@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2010 - 2017 Novatek, Inc.
- * Copyright (C) 2018 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * $Revision: 21600 $
  * $Date: 2018-01-12 15:21:45 +0800 (週五, 12 一月 2018) $
@@ -315,7 +315,7 @@ static int32_t c_show(struct seq_file *m, void *v)
 	seq_puts(m, "\n");
 #endif
 
-	seq_puts(m, "\n\n");
+	seq_printf(m, "\n\n");
 	return 0;
 }
 

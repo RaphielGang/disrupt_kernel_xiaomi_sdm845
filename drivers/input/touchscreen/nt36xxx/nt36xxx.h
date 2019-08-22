@@ -73,7 +73,13 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 /*---Customerized func.---*/
 #define NVT_TOUCH_PROC 1
 #define NVT_TOUCH_EXT_PROC 1
+
+#ifdef CONFIG_TOUCHSCREEN_NT36XXX_MPCTRL
+#define NVT_TOUCH_MP 1
+#else
 #define NVT_TOUCH_MP 0
+#endif
+
 #define MT_PROTOCOL_B 1
 #define WAKEUP_GESTURE 1
 #if WAKEUP_GESTURE
@@ -136,6 +142,8 @@ struct nvt_ts_data {
 	const struct nvt_ts_mem_map *mmap;
 	uint8_t carrier_system;
 	uint16_t nvt_pid;
+	uint8_t xbuf[1025];
+	struct mutex xbuf_lock;
 
 	int gesture_enabled;
 	int glove_enabled;
