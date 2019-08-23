@@ -1,6 +1,6 @@
 # Kat Kernel for SDM845-common Repository
 
-![logo](https://i.imgur.com/QFlujFh.png "Header.exe")
+![logo](https://i.imgur.com/o8JZN1j.png "Header.exe")
 
 > This repository is a mirror of Kat Kernel's Gogs repository, this intended to be bleeding-edge-stuff of my keks, this repository is blameable for every memes I do for beryllium, like literally
 
