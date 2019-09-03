@@ -176,8 +176,7 @@ int msm_comm_vote_bus(struct msm_vidc_core *core)
 	int rc = 0, vote_data_count = 0, i = 0;
 	struct hfi_device *hdev;
 	struct msm_vidc_inst *inst = NULL;
-	struct vidc_bus_vote_data *vote_data = NULL;
-	struct vidc_bus_vote_data vote_data_onstack[1] __aligned(8);
+	struct vidc_bus_vote_data vote_data[MAX_SUPPORTED_INSTANCES];
 	bool is_turbo = false;
 
 	if (!core || !core->device) {
@@ -191,20 +190,7 @@ int msm_comm_vote_bus(struct msm_vidc_core *core)
 	list_for_each_entry(inst, &core->instances, list)
 		++vote_data_count;
 
-	if (vote_data_count > 1) {
-		vote_data = kcalloc(vote_data_count, sizeof(*vote_data),
-				GFP_TEMPORARY);
-		if (!vote_data) {
-			dprintk(VIDC_ERR, "%s: failed to allocate memory\n", __func__);
-			mutex_unlock(&core->lock);
-			rc = -ENOMEM;
-			return rc;
-		}
-	} else {
-		memset(vote_data_onstack, 0, sizeof(struct vidc_bus_vote_data));
-		vote_data = vote_data_onstack;
-	}
-	vote_data_count = 0;
+	memset(&vote_data, 0, sizeof(vote_data));
 
 	list_for_each_entry(inst, &core->instances, list) {
 		int codec = 0;
@@ -316,8 +302,6 @@ int msm_comm_vote_bus(struct msm_vidc_core *core)
 		rc = call_hfi_op(hdev, vote_bus, hdev->hfi_device_data,
 			vote_data, vote_data_count);
 
-	if (vote_data != vote_data_onstack)
-		kfree(vote_data);
 	return rc;
 }
 
