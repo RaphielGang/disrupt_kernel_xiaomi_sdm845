@@ -540,7 +540,6 @@ struct fg_chip {
 	struct work_struct	status_change_work;
 	struct work_struct	esr_sw_work;
 	struct delayed_work	ttf_work;
-	struct delayed_work	esr_timer_config_work;
 	struct delayed_work	sram_dump_work;
 	struct delayed_work	soc_work;
 	struct delayed_work	pl_enable_work;
