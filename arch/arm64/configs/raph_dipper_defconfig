@@ -1,4 +1,4 @@
-CONFIG_LOCALVERSION="-Disrupt-Clownpiece"
+CONFIG_LOCALVERSION="-Disrupt-UntitledGoose"
 # CONFIG_FHANDLE is not set
 CONFIG_NO_HZ=y
 CONFIG_HIGH_RES_TIMERS=y
