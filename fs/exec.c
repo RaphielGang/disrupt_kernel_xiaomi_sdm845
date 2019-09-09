@@ -1284,6 +1284,10 @@ void __set_task_comm(struct task_struct *tsk, const char *buf, bool exec)
 		!strncmp(buf, "aoapp.musically", TASK_COMM_LEN) ||
 		!strncmp(buf, "droid.ugc.trill", TASK_COMM_LEN) ||
 		!strncmp(buf, "id.ugc.trill.go", TASK_COMM_LEN) ||
+		!strncmp(buf, "StarEN.AzurLane", TASK_COMM_LEN) ||
+		!strncmp(buf, "iHoYo.bh3global", TASK_COMM_LEN) ||
+		!strncmp(buf, "tegrandorder.en", TASK_COMM_LEN) ||
+		!strncmp(buf, ".project.nutaku", TASK_COMM_LEN) ||
 		!strncmp(buf, "rlsfrontline.en", TASK_COMM_LEN)) {
 		struct task_kill_info *kinfo;
 
