@@ -643,6 +643,8 @@ int smblib_set_prop_rerun_apsd(struct smb_charger *chg,
 int smblib_toggle_stat(struct smb_charger *chg, int reset);
 int smblib_set_prop_wireless_wakelock(struct smb_charger *chg,
 				const union power_supply_propval *val);
+void smblib_wireless_set_enable(struct smb_charger *chg,
+				int enable);
 
 int smblib_init(struct smb_charger *chg);
 int smblib_deinit(struct smb_charger *chg);

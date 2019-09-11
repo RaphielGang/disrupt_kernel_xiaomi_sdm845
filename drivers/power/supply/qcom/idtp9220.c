@@ -973,12 +973,6 @@ static void idtp9220_set_charging_param(struct idtp9220_device_info *di)
 		break;
 	}
 
-	printk("[idtp] soc:%d,vol_now:%d,cur_now:%d",
-			"input_now:%d,health:%d,screen:%d\n",
-			soc, vol_now, cur_now, input_now, health, di->screen_on);
-	printk("[idtp] di->status:0x%x,adapter_vol =%d,icl_curr=%d\n",
-			di->status, adapter_vol, icl_curr);
-
 	idtp922x_set_adap_vol(di, adapter_vol);
 	msleep(500);
 	idtp922x_set_pmi_icl(di, icl_curr);
@@ -1298,16 +1292,6 @@ static void idtp9220_sram_update_work(struct work_struct *work)
 
 	di->bus.write_buf(di, 0x0600, idt_firmware_sram, size);
 	di->bus.read_buf(di, 0x0600, buffer, size);
-
-	while (size--) {
-		if (idt_firmware_sram[i] == buffer[i]) {
-			printk("buffer[%d]:0x%x", i, buffer[i]);
-		} else {
-			printk("[idt] sram data is not right\n");
-			return;
-		}
-		i++;
-	}
 
 	di->bus.write(di, 0x4F, 0x5A);
 
