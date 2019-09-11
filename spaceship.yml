@@ -30,7 +30,7 @@ steps:
     - ./buildscripts/kernel.sh
   when:
     branch:
-      - rebase-sdx-staging
+      - rebase-sdm-10
 
 - name: do_dipper
   image: debian:latest
@@ -47,4 +47,4 @@ steps:
     - ./buildscripts/kernel.sh
   when:
     branch:
-      - rebase-sdx-staging
+      - rebase-sdm-10
