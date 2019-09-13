@@ -518,9 +518,9 @@ lmh_freq_limit_show(struct device *dev, struct device_attribute *devattr,
 }
 
 /*
- * The CPUFREQ_ADJUST notifier is used to override the current policy max to
- * make sure policy max <= hw_freq_limit. The cpufreq framework then does the job
- * of enforcing the new policy.
+ * The CPUFREQ_INCOMPATIBLE notifier is used to override the current
+ * policy max to make sure policy max <= hw_freq_limit. The cpufreq
+ * framework then does the job of enforcing the new policy.
  */
 static int thermal_adjust_notify(struct notifier_block *nb, unsigned long val,
 				void *data)
@@ -530,18 +530,10 @@ static int thermal_adjust_notify(struct notifier_block *nb, unsigned long val,
 	struct limits_dcvs_hw *hw = get_dcvsh_hw_from_cpu(cpu);
 
 	switch (val) {
-	case CPUFREQ_ADJUST:
+	case CPUFREQ_INCOMPATIBLE:
 		if (!hw)
 			break;
-
-		pr_debug("CPU%u policy max before thermal adjust: %u kHz\n",
-			 cpu, policy->max);
-		pr_debug("CPU%u boost max: %lu kHz\n", cpu, hw->hw_freq_limit);
-
 		cpufreq_verify_within_limits(policy, 0, hw->hw_freq_limit);
-
-		pr_debug("CPU%u policy max after boost: %u kHz\n",
-			 cpu, policy->max);
 		break;
 	}
 

@@ -2758,23 +2758,28 @@ static int create_thermal_message_node(void) {
 	dev_set_name(&thermal_message_dev, "thermal_message");
 	ret = device_register(&thermal_message_dev);
 	if (!ret) {
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_batt_message.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+						&dev_attr_batt_message.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create batt message node failed\n");
 #ifdef CONFIG_DRM
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_screen_state.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+						&dev_attr_screen_state.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create batt message node failed\n");
 #endif
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_sconfig.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+						&dev_attr_sconfig.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create sconfig node failed\n");
 
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_boost.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+						&dev_attr_boost.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create boost node failed\n");
 
-		ret = sysfs_create_file(&thermal_message_dev.kobj, &dev_attr_temp_state.attr);
+		ret = sysfs_create_file(&thermal_message_dev.kobj,
+						&dev_attr_temp_state.attr);
 		if (ret < 0)
 			pr_warn("Thermal: create temp state node failed\n");
 	}
@@ -2794,7 +2799,8 @@ static void destroy_thermal_message_node(void) {
 }
 
 #ifdef CONFIG_DRM
-static int screen_state_for_thermal_callback(struct notifier_block *nb, unsigned long val, void *data)
+static int screen_state_for_thermal_callback(struct notifier_block *nb,
+				unsigned long val, void *data)
 {
 	struct drm_notify_data *evdata = data;
 	unsigned int blank;
@@ -2866,9 +2872,8 @@ static int __init thermal_init(void)
 
 #ifdef CONFIG_DRM
 	sm.thermal_notifier.notifier_call = screen_state_for_thermal_callback;
-	if (drm_register_client(&sm.thermal_notifier) < 0) {
+	if (drm_register_client(&sm.thermal_notifier) < 0)
 		pr_warn("Thermal: register screen state callback failed\n");
-	}
 #endif
 
 	return 0;
