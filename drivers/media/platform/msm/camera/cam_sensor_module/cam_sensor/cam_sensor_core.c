@@ -652,12 +652,10 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
-#ifndef MV_TEMP_SET
 	power_info->power_setting = NULL;
 	power_info->power_down_setting = NULL;
 	power_info->power_setting_size = 0;
 	power_info->power_down_setting_size = 0;
-#endif
 	s_ctrl->streamon_count = 0;
 	s_ctrl->streamoff_count = 0;
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
@@ -700,8 +698,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 {
 	int rc = 0;
 	struct cam_control *cmd = (struct cam_control *)arg;
-	struct cam_sensor_power_setting *pu = NULL;
-	struct cam_sensor_power_setting *pd = NULL;
 	struct cam_sensor_power_ctrl_t *power_info =
 		&s_ctrl->sensordata->power_info;
 	if (!s_ctrl || !arg) {
@@ -725,32 +721,12 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				"Already Sensor Probed in the slot");
 			break;
 		}
-		/* Allocate memory for power up setting */
-		pu = kzalloc(sizeof(struct cam_sensor_power_setting) *
-			MAX_POWER_CONFIG, GFP_KERNEL);
-		if (!pu) {
-			rc = -ENOMEM;
-			goto release_mutex;
-		}
-
-		pd = kzalloc(sizeof(struct cam_sensor_power_setting) *
-			MAX_POWER_CONFIG, GFP_KERNEL);
-		if (!pd) {
-			kfree(pu);
-			rc = -ENOMEM;
-			goto release_mutex;
-		}
-
-		power_info->power_setting = pu;
-		power_info->power_down_setting = pd;
 
 		if (cmd->handle_type ==
 			CAM_HANDLE_MEM_HANDLE) {
 			rc = cam_handle_mem_ptr(cmd->handle, s_ctrl);
 			if (rc < 0) {
 				CAM_ERR(CAM_SENSOR, "Get Buffer Handle Failed");
-				kfree(pu);
-				kfree(pd);
 				goto release_mutex;
 			}
 		} else {
@@ -1108,17 +1084,12 @@ release_mutex:
 	return rc;
 
 free_power_settings:
-#if MV_TEMP_SET
-	kfree(pu);
-	kfree(pd);
-#else
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
 	power_info->power_setting = NULL;
 	power_info->power_down_setting = NULL;
 	power_info->power_down_setting_size = 0;
 	power_info->power_setting_size = 0;
-#endif
 	mutex_unlock(&(s_ctrl->cam_sensor_mutex));
 	return rc;
 }
