@@ -775,17 +775,14 @@ static const struct apsd_result *smblib_update_usb_type(struct smb_charger *chg)
 	/* if PD is active, APSD is disabled so won't have a valid result */
 	if (chg->pd_active) {
 		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_PD;
-		chg->usb_psy_desc.type = POWER_SUPPLY_TYPE_USB_PD;
 	} else {
 		/*
 		 * Update real charger type only if its not FLOAT
 		 * detected as as SDP
 		 */
 		if (!(apsd_result->pst == POWER_SUPPLY_TYPE_USB_FLOAT &&
-			chg->real_charger_type == POWER_SUPPLY_TYPE_USB)) {
-			chg->real_charger_type = apsd_result->pst;
-			chg->usb_psy_desc.type = apsd_result->pst;
-		}
+			chg->real_charger_type == POWER_SUPPLY_TYPE_USB))
+		chg->real_charger_type = apsd_result->pst;
 	}
 
 	smblib_dbg(chg, PR_MISC, "APSD=%s PD=%d\n",
@@ -2547,7 +2544,7 @@ static int smblib_therm_charging(struct smb_charger *chg)
 	if (chg->system_temp_level >= MAX_TEMP_LEVEL)
 		return 0;
 
-	switch (chg->usb_psy_desc.type) {
+	switch (chg->real_charger_type) {
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
 		thermal_icl_ua = chg->thermal_mitigation_qc2[chg->system_temp_level];
 		break;
@@ -3396,7 +3393,6 @@ static int smblib_handle_usb_current(struct smb_charger *chg,
 			 * real_charger_type
 			 */
 			chg->real_charger_type = POWER_SUPPLY_TYPE_USB;
-			chg->usb_psy_desc.type = POWER_SUPPLY_TYPE_USB;
 			rc = vote(chg->usb_icl_votable, USB_PSY_VOTER,
 						true, usb_current);
 			if (rc < 0)
@@ -4185,7 +4181,6 @@ static void smblib_cc_float_charge_work(struct work_struct *work)
 			&& (chg->cc_float_detected == false)) {
 		chg->cc_float_detected = true;
 		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_DCP;
-		chg->usb_psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
 		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, false, 0);
 		vote(chg->usb_icl_votable, CC_FLOAT_VOTER, true, 500000);
 		power_supply_changed(chg->batt_psy);
@@ -4289,7 +4284,6 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 				if (chg->cc_float_detected) {
 					chg->cc_float_detected = false;
 					chg->real_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
-					chg->usb_psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
 				}
 				vote(chg->usb_icl_votable, CC_FLOAT_VOTER, false, 0);
 				vote(chg->usb_icl_votable, WEAK_CHARGER_VOTER,
@@ -4430,7 +4424,6 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		if (chg->cc_float_detected) {
 			chg->cc_float_detected = false;
 			chg->real_charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
-			chg->usb_psy_desc.type = POWER_SUPPLY_TYPE_UNKNOWN;
 		}
 		chg->recheck_charger = false;
 		chg->legacy = false;
