@@ -102,8 +102,4 @@ extern void bbd_parse_asic_data(unsigned char *pucData,
 					void *priv),
 					void *priv);
 
-
-#ifdef CONFIG_BCM_GPS_SPI_DRIVER
-extern void bcm477x_debug_info(const char *buf);
-#endif
 #endif /* __BBD_H__ */
