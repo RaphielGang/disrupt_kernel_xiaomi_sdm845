@@ -14,6 +14,7 @@ steps:
     - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
     - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
     - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git -b elf arm64cc
+    - git clone --depth=1 https://github.com/Haseo97/Clang-10.0.0.git clang
 
 - name: do_beryllium
   image: debian:latest
@@ -21,7 +22,7 @@ steps:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
     EXEC: beryllium
-    CC: GCC
+    CC: Clang
     WORKER: semaphore
     KERNELDIR: /drone/src/
   commands:
@@ -38,7 +39,7 @@ steps:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
     EXEC: dipper
-    CC: GCC
+    CC: Clang
     WORKER: semaphore
     KERNELDIR: /drone/src/
   commands:
