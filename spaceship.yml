@@ -44,7 +44,7 @@ steps:
   commands:
     - dnf install -y dnf-plugins-core copr-cli
     - dnf copr enable -y che/llvm
-    - dnf install -y gcc-aarch64-linux-gnu clang binutils which hostname ncurses ccache bc bash git-core gnupg zip curl make automake autogen autoconf ibtool shtool python m4 gcc libtool dash pigz
+    - dnf install -y gcc-aarch64-linux-gnu clang binutils which hostname ncurses ccache bc bash git-core gnupg zip curl make automake autogen autoconf libtool shtool python m4 gcc libtool dash pigz
     - ./buildscripts/kernel.sh
   when:
     branch:
