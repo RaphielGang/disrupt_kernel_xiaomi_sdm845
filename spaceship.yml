@@ -6,45 +6,35 @@ clone:
 
 steps:
 - name: clone_dependencies
-  image: fedora:latest
+  image: raphielscape/spinsinfra:fedora
   commands:
-    - dnf install -y git
     - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
     - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
     - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
-    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git -b elf arm64cc
 
 - name: do_beryllium
-  image: fedora:latest
+  image: raphielscape/spinsinfra:fedora
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
     EXEC: beryllium
     CC: Clang
-    WORKER: semaphore
     KERNELDIR: /drone/src/
   commands:
-    - dnf install -y dnf-plugins-core copr-cli
-    - dnf copr enable -y che/llvm
-    - dnf install -y gcc-aarch64-linux-gnu clang binutils which hostname ncurses ccache bc bash git-core gnupg zip curl make automake autogen autoconf libtool shtool python m4 gcc libtool dash pigz
     - ./buildscripts/kernel.sh
   when:
     branch:
       - rebase-sdm-10
 
 - name: do_dipper
-  image: fedora:latest
+  image: raphielscape/spinsinfra:fedora
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
     EXEC: dipper
     CC: Clang
-    WORKER: semaphore
     KERNELDIR: /drone/src/
   commands:
-    - dnf install -y dnf-plugins-core copr-cli
-    - dnf copr enable -y che/llvm
-    - dnf install -y gcc-aarch64-linux-gnu clang binutils which hostname ncurses ccache bc bash git-core gnupg zip curl make automake autogen autoconf libtool shtool python m4 gcc libtool dash pigz
     - ./buildscripts/kernel.sh
   when:
     branch:
