@@ -1,4 +1,4 @@
-CONFIG_LOCALVERSION="-Disrupt-UntitledGoose"
+CONFIG_LOCALVERSION="-Disrupt-StillWithGoose"
 # CONFIG_FHANDLE is not set
 CONFIG_AUDIT=y
 # CONFIG_AUDITSYSCALL is not set
