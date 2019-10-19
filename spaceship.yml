@@ -5,7 +5,7 @@ clone:
   depth: 1
 
 steps:
-- name: clone_dependencies
+- name: clone_deps
   image: raphielscape/spinsinfra:fedora
   commands:
     - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
