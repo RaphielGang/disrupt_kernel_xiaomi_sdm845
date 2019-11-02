@@ -19,7 +19,7 @@ steps:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
     EXEC: beryllium
-    CC: GCC
+    CC: Clang
     KERNELDIR: /drone/src/
   commands:
     - ./buildscripts/kernel.sh
@@ -33,7 +33,7 @@ steps:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
     EXEC: dipper
-    CC: GCC
+    CC: Clang
     KERNELDIR: /drone/src/
   commands:
     - ./buildscripts/kernel.sh
