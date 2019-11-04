@@ -58,14 +58,12 @@ int32_t cam_ois_construct_default_power_setting(
 free_power_settings:
 	kfree(power_info->power_setting);
 	power_info->power_setting = NULL;
-	power_info->power_setting_size = 0;
 	return rc;
 }
 
-#ifdef CONFIG_USE_ROHM_BU64753
+
 #define CUSTOM_INIT_DL
-#endif
-#define OIS_TRANS_SIZE	64
+#define OIS_TRANS_SIZE 64
 
 /**
  * cam_ois_get_dev_handle - get device handle
@@ -315,17 +313,19 @@ static int cam_ois_fw_init0(struct cam_ois_ctrl_t *o_ctrl)
 {
 	int32_t rc = 0;
 	struct cam_sensor_i2c_reg_setting write_setting;
-
-	write_setting.size = sizeof(ois_init0_array) /
-				sizeof(struct cam_sensor_i2c_reg_array);
+	write_setting.size =  sizeof(ois_init0_array)/sizeof(struct cam_sensor_i2c_reg_array);
 	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 	write_setting.delay = 0;
 	write_setting.reg_setting = ois_init0_array;
 
-	rc = camera_io_dev_write(&(o_ctrl->io_master_info), &write_setting);
-	if (rc < 0)
-		CAM_ERR(CAM_OIS, "Failed in Applying i2c wrt settings");
+	rc = camera_io_dev_write(&(o_ctrl->io_master_info),
+		&write_setting);
+	if (rc < 0) {
+		CAM_ERR(CAM_OIS,
+			"{dipper-debug-ois}Failed in Applying i2c wrt settings");
+		return rc;
+	}
 
 	return rc;
 }
@@ -401,7 +401,6 @@ static int cam_ois_fw_download(struct cam_ois_ctrl_t *o_ctrl)
 
 		while (camera_io_wait_normal_write())
 			schedule();
-
 		rc = camera_io_dev_write_continuous(&(o_ctrl->io_master_info),
 			&i2c_reg_setting, 1);
 		if (rc < 0) {
@@ -452,7 +451,6 @@ static int cam_ois_fw_download(struct cam_ois_ctrl_t *o_ctrl)
 
 		while (camera_io_wait_normal_write())
 			schedule();
-
 		rc = camera_io_dev_write_continuous(&(o_ctrl->io_master_info),
 			&i2c_reg_setting, 1);
 		if (rc < 0)
@@ -708,7 +706,6 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 	}
 	return rc;
 pwr_dwn:
-	o_ctrl->cam_ois_state = CAM_OIS_ACQUIRE;
 	cam_ois_power_down(o_ctrl);
 	return rc;
 }
@@ -739,21 +736,10 @@ void cam_ois_shutdown(struct cam_ois_ctrl_t *o_ctrl)
 		o_ctrl->bridge_intf.session_hdl = -1;
 	}
 
-	if (o_ctrl->i2c_mode_data.is_settings_valid == 1)
-		delete_request(&o_ctrl->i2c_mode_data);
-
-	if (o_ctrl->i2c_calib_data.is_settings_valid == 1)
-		delete_request(&o_ctrl->i2c_calib_data);
-
-	if (o_ctrl->i2c_init_data.is_settings_valid == 1)
-		delete_request(&o_ctrl->i2c_init_data);
-
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
 	power_info->power_setting = NULL;
 	power_info->power_down_setting = NULL;
-	power_info->power_down_setting_size = 0;
-	power_info->power_setting_size = 0;
 
 	o_ctrl->cam_ois_state = CAM_OIS_INIT;
 }
@@ -767,13 +753,11 @@ void cam_ois_shutdown(struct cam_ois_ctrl_t *o_ctrl)
  */
 int cam_ois_driver_cmd(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 {
-	int                              rc = 0;
-	struct cam_ois_query_cap_t       ois_cap = {0};
-	struct cam_control              *cmd = (struct cam_control *)arg;
-	struct cam_ois_soc_private      *soc_private = NULL;
-	struct cam_sensor_power_ctrl_t  *power_info = NULL;
+	int                            rc = 0;
+	struct cam_ois_query_cap_t     ois_cap = {0};
+	struct cam_control            *cmd = (struct cam_control *)arg;
 
-	if (!o_ctrl || !cmd) {
+	if (!o_ctrl || !arg) {
 		CAM_ERR(CAM_OIS, "Invalid arguments");
 		return -EINVAL;
 	}
@@ -783,10 +767,6 @@ int cam_ois_driver_cmd(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			cmd->handle_type);
 		return -EINVAL;
 	}
-
-	soc_private =
-		(struct cam_ois_soc_private *)o_ctrl->soc_info.soc_private;
-	power_info = &soc_private->power_info;
 
 	mutex_lock(&(o_ctrl->ois_mutex));
 	switch (cmd->op_code) {
@@ -858,23 +838,6 @@ int cam_ois_driver_cmd(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 		o_ctrl->bridge_intf.link_hdl = -1;
 		o_ctrl->bridge_intf.session_hdl = -1;
 		o_ctrl->cam_ois_state = CAM_OIS_INIT;
-
-		kfree(power_info->power_setting);
-		kfree(power_info->power_down_setting);
-		power_info->power_setting = NULL;
-		power_info->power_down_setting = NULL;
-		power_info->power_down_setting_size = 0;
-		power_info->power_setting_size = 0;
-
-		if (o_ctrl->i2c_mode_data.is_settings_valid == 1)
-			delete_request(&o_ctrl->i2c_mode_data);
-
-		if (o_ctrl->i2c_calib_data.is_settings_valid == 1)
-			delete_request(&o_ctrl->i2c_calib_data);
-
-		if (o_ctrl->i2c_init_data.is_settings_valid == 1)
-			delete_request(&o_ctrl->i2c_init_data);
-
 		break;
 	case CAM_STOP_DEV:
 		if (o_ctrl->cam_ois_state != CAM_OIS_START) {

@@ -157,11 +157,8 @@ static int __cam_node_handle_acquire_dev(struct cam_node *node,
 		CAM_ERR(CAM_CORE, "No free ctx in free list node %s",
 			node->name);
 		cam_node_print_ctx_state(node);
-
-		/* Recycle oldest ctx in acquired list */
 		cam_node_recycle_ctxt_from_acquired_list(node);
 
-		/* Try again to get a ctx from free list */
 		ctx = cam_node_get_ctxt_from_free_list(node);
 		if (!ctx) {
 			rc = -ENOMEM;
@@ -388,8 +385,6 @@ static int __cam_node_handle_release_dev(struct cam_node *node,
 		goto destroy_dev_hdl;
 	}
 
-	ctx->ctx_released = true;
-
 	cam_context_putref(ctx);
 
 destroy_dev_hdl:
@@ -401,6 +396,8 @@ destroy_dev_hdl:
 	CAM_DBG(CAM_CORE, "[%s] Release ctx_id=%d, refcount=%d",
 		node->name, ctx->ctx_id,
 		atomic_read(&(ctx->refcount.refcount)));
+
+	ctx->ctx_released = true;
 
 	return rc;
 }

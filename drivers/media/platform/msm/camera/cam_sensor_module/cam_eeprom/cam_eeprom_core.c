@@ -70,9 +70,7 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 			i2c_reg_settings.addr_type = emap[j].page.addr_type;
 			i2c_reg_settings.data_type = emap[j].page.data_type;
 			i2c_reg_settings.size = 1;
-#ifdef CONFIG_USE_BU64748
 			i2c_reg_settings.delay = emap[j].page.delay;
-#endif
 			i2c_reg_array.reg_addr = emap[j].page.addr;
 			i2c_reg_array.reg_data = emap[j].page.data;
 			i2c_reg_array.delay = emap[j].page.delay;
@@ -116,10 +114,8 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 			}
 		}
 
-#ifdef CONFIG_USE_BU64748
 		if (emap[j].delay.valid_size)
 			msleep(emap[j].delay.delay);
-#endif
 
 		if (emap[j].mem.valid_size) {
 			rc = camera_io_dev_read_seq(&e_ctrl->io_master_info,
@@ -132,46 +128,18 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 					rc);
 				return rc;
 			}
+
 #ifdef CONFIG_USE_ROHM_BU64753
 			if ((memptr != NULL) &&
 				(memptr[1] == LITEON_VENDOR_ID) &&
 				(emap[j].saddr == BACK_CAMERA_LILTEON_EEPROM_ADDR) &&
-				(emap[j].mem.valid_size >=
-				(EEPROM_READ_START_INDEX + EEPROM_MAP_DATA_CNT))) {
-				memset(
-					g_eeprom_mapdata,
-					0,
-					ARRAY_SIZE(g_eeprom_mapdata)
-				);
-				memcpy(
-					g_eeprom_mapdata,
-					memptr+EEPROM_READ_START_INDEX,
-					EEPROM_MAP_DATA_CNT
-					);
+				(emap[j].mem.valid_size >= (EEPROM_READ_START_INDEX + EEPROM_MAP_DATA_CNT))) {
+				memset(g_eeprom_mapdata, 0, ARRAY_SIZE(g_eeprom_mapdata));
+				memcpy(g_eeprom_mapdata, memptr+EEPROM_READ_START_INDEX, EEPROM_MAP_DATA_CNT);
 			}
-			memptr += emap[j].mem.valid_size;
-		}
-#else
-			memptr += emap[j].mem.valid_size;
-		}
 #endif
 
-		if (emap[j].pageen.valid_size) {
-			i2c_reg_settings.addr_type = emap[j].pageen.addr_type;
-			i2c_reg_settings.data_type = emap[j].pageen.data_type;
-			i2c_reg_settings.size = 1;
-			i2c_reg_array.reg_addr = emap[j].pageen.addr;
-			i2c_reg_array.reg_data = 0;
-			i2c_reg_array.delay = emap[j].pageen.delay;
-			i2c_reg_settings.reg_setting = &i2c_reg_array;
-			rc = camera_io_dev_write(&e_ctrl->io_master_info,
-				&i2c_reg_settings);
-			if (rc) {
-				CAM_ERR(CAM_EEPROM,
-					"page disable failed rc %d",
-					rc);
-				return rc;
-			}
+			memptr += emap[j].mem.valid_size;
 		}
 	}
 	return rc;
@@ -905,12 +873,6 @@ static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 		e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
 		vfree(e_ctrl->cal_data.mapdata);
 		vfree(e_ctrl->cal_data.map);
-		kfree(power_info->power_setting);
-		kfree(power_info->power_down_setting);
-		power_info->power_setting = NULL;
-		power_info->power_down_setting = NULL;
-		power_info->power_setting_size = 0;
-		power_info->power_down_setting_size = 0;
 		e_ctrl->cal_data.num_data = 0;
 		e_ctrl->cal_data.num_map = 0;
 		break;
@@ -925,8 +887,6 @@ memdata_free:
 error:
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
-	power_info->power_setting = NULL;
-	power_info->power_down_setting = NULL;
 	vfree(e_ctrl->cal_data.map);
 	e_ctrl->cal_data.num_data = 0;
 	e_ctrl->cal_data.num_map = 0;
@@ -962,10 +922,6 @@ void cam_eeprom_shutdown(struct cam_eeprom_ctrl_t *e_ctrl)
 
 		kfree(power_info->power_setting);
 		kfree(power_info->power_down_setting);
-		power_info->power_setting = NULL;
-		power_info->power_down_setting = NULL;
-		power_info->power_setting_size = 0;
-		power_info->power_down_setting_size = 0;
 	}
 
 	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;

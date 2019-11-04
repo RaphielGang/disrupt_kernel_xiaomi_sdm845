@@ -29,7 +29,7 @@ static uint32_t sensor_read_regs_data;
 extern struct cam_sensor_ctrl_t *g_sctrl[MAX_CAMERAS];
 
 ssize_t mv_operate_sensor_write_regs_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
+		struct device_attribute *attr,const char *buf, size_t count)
 {
 	int rc = 0;
 	struct cam_sensor_ctrl_t  *s_ctrl = dev->driver_data;
@@ -37,13 +37,14 @@ ssize_t mv_operate_sensor_write_regs_store(struct device *dev,
 	struct cam_sensor_i2c_reg_array ir_reg_array;
 
 	if (!s_ctrl) {
-		CAM_ERR(CAM_SENSOR, "%s: can not get the IR camera sensor!\n", __func__);
+		CAM_ERR(CAM_SENSOR,"%s: can not get the IR camera sensor!\n", __func__);
 		return 0;
 	}
 	rc = sscanf(buf, "0x%x 0x%x", &sensor_write_regs_addr, &sensor_write_regs_data);
 	if (rc == 0) {
-		CAM_ERR(CAM_SENSOR, "%s: can not get right IR camera regs!\n", __func__);
-	} else {
+		CAM_ERR(CAM_SENSOR,"%s: can not get right IR camera regs!\n", __func__);
+	}
+	else {
 		ir_write_setting.size =  1;
 		ir_write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 		ir_write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
@@ -55,10 +56,10 @@ ssize_t mv_operate_sensor_write_regs_store(struct device *dev,
 		rc = camera_io_dev_write(&(s_ctrl->io_master_info),
 		&ir_write_setting);
 		if (rc < 0)
-			CAM_ERR(CAM_SENSOR, "%s: can not write IR camera sensor reg!\n", __func__);
+			CAM_ERR(CAM_SENSOR,"%s: can not write IR camera sensor reg!\n", __func__);
 		}
-		CAM_DBG(CAM_SENSOR, "%s: sensor_write_regs_addr = 0x%x, sensor_write_regs_data = 0x%x ",
-			__func__, sensor_write_regs_addr, sensor_write_regs_data);
+		CAM_DBG(CAM_SENSOR,"%s: sensor_write_regs_addr = 0x%x, sensor_write_regs_data = 0x%x ",
+			__func__,sensor_write_regs_addr,sensor_write_regs_data);
 
 		return count;
 }
@@ -70,29 +71,30 @@ ssize_t mv_operate_sensor_write_regs_show(struct device *dev,
 }
 
 ssize_t mv_operate_sensor_read_regs_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
+		struct device_attribute *attr,const char *buf, size_t count)
 {
 	int rc = 0;
 	struct cam_sensor_ctrl_t  *s_ctrl = dev->driver_data;
 
 	if (!s_ctrl) {
-		CAM_ERR(CAM_SENSOR, "%s: can not get the IR camera sensor!\n", __func__);
+		CAM_ERR(CAM_SENSOR,"%s: can not get the IR camera sensor!\n", __func__);
 		return 0;
 	}
 	rc = sscanf(buf, "0x%x", &sensor_read_regs_addr);
 	if (rc == 0) {
-		CAM_ERR(CAM_SENSOR, "%s: can not get right IR camera regs!\n", __func__);
-	} else {
+		CAM_ERR(CAM_SENSOR,"%s: can not get right IR camera regs!\n", __func__);
+	}
+	else {
 		rc = camera_io_dev_read(
 		&(s_ctrl->io_master_info),
 		sensor_read_regs_addr,
 		&sensor_read_regs_data, CAMERA_SENSOR_I2C_TYPE_WORD,
 		CAMERA_SENSOR_I2C_TYPE_BYTE);
 		if (rc < 0)
-			CAM_ERR(CAM_SENSOR, "%s: can not read IR camera sensor reg!\n", __func__);
+			CAM_ERR(CAM_SENSOR,"%s: can not read IR camera sensor reg!\n", __func__);
 		}
-		CAM_DBG(CAM_SENSOR, "%s: sensor_read_regs_addr = 0x%x, sensor_read_regs_data = 0x%x ",
-			__func__, sensor_read_regs_addr, sensor_read_regs_data);
+		CAM_DBG(CAM_SENSOR,"%s: sensor_read_regs_addr = 0x%x, sensor_read_regs_data = 0x%x ",
+			__func__,sensor_read_regs_addr,sensor_read_regs_data);
 
 		return count;
 }
@@ -149,7 +151,7 @@ static void cam_sensor_release_stream_rsc(
 	}
 }
 
-static void cam_sensor_release_per_frame_resource(
+static void cam_sensor_release_resource(
 	struct cam_sensor_ctrl_t *s_ctrl)
 {
 	struct i2c_settings_array *i2c_set = NULL;
@@ -638,7 +640,7 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 	if (s_ctrl->sensor_state == CAM_SENSOR_INIT)
 		return;
 
-	cam_sensor_release_per_frame_resource(s_ctrl);
+	cam_sensor_release_resource(s_ctrl);
 	cam_sensor_release_stream_rsc(s_ctrl);
 	if (s_ctrl->sensor_state >= CAM_SENSOR_ACQUIRE)
 		cam_sensor_power_down(s_ctrl);
@@ -651,10 +653,7 @@ void cam_sensor_shutdown(struct cam_sensor_ctrl_t *s_ctrl)
 	s_ctrl->bridge_intf.session_hdl = -1;
 	kfree(power_info->power_setting);
 	kfree(power_info->power_down_setting);
-	power_info->power_setting = NULL;
-	power_info->power_down_setting = NULL;
-	power_info->power_setting_size = 0;
-	power_info->power_down_setting_size = 0;
+
 	s_ctrl->streamon_count = 0;
 	s_ctrl->streamoff_count = 0;
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
@@ -697,6 +696,8 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 {
 	int rc = 0;
 	struct cam_control *cmd = (struct cam_control *)arg;
+	struct cam_sensor_power_setting *pu = NULL;
+	struct cam_sensor_power_setting *pd = NULL;
 	struct cam_sensor_power_ctrl_t *power_info =
 		&s_ctrl->sensordata->power_info;
 	if (!s_ctrl || !arg) {
@@ -720,12 +721,32 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				"Already Sensor Probed in the slot");
 			break;
 		}
+		/* Allocate memory for power up setting */
+		pu = kzalloc(sizeof(struct cam_sensor_power_setting) *
+			MAX_POWER_CONFIG, GFP_KERNEL);
+		if (!pu) {
+			rc = -ENOMEM;
+			goto release_mutex;
+		}
+
+		pd = kzalloc(sizeof(struct cam_sensor_power_setting) *
+			MAX_POWER_CONFIG, GFP_KERNEL);
+		if (!pd) {
+			kfree(pu);
+			rc = -ENOMEM;
+			goto release_mutex;
+		}
+
+		power_info->power_setting = pu;
+		power_info->power_down_setting = pd;
 
 		if (cmd->handle_type ==
 			CAM_HANDLE_MEM_HANDLE) {
 			rc = cam_handle_mem_ptr(cmd->handle, s_ctrl);
 			if (rc < 0) {
 				CAM_ERR(CAM_SENSOR, "Get Buffer Handle Failed");
+				kfree(pu);
+				kfree(pd);
 				goto release_mutex;
 			}
 		} else {
@@ -744,7 +765,9 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			CAM_ERR(CAM_SENSOR,
 				"Fail in filling vreg params for PUP rc %d",
 				 rc);
-			goto free_power_settings;
+			kfree(pu);
+			kfree(pd);
+			goto release_mutex;
 		}
 
 		/* Parse and fill vreg params for powerdown settings*/
@@ -756,14 +779,18 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			CAM_ERR(CAM_SENSOR,
 				"Fail in filling vreg params for PDOWN rc %d",
 				 rc);
-			goto free_power_settings;
+			kfree(pu);
+			kfree(pd);
+			goto release_mutex;
 		}
 
 		/* Power up and probe sensor */
 		rc = cam_sensor_power_up(s_ctrl);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR, "power up failed");
-			goto free_power_settings;
+			kfree(pu);
+			kfree(pd);
+			goto release_mutex;
 		}
 
 		/* Match sensor ID */
@@ -771,7 +798,9 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		if (rc < 0) {
 			cam_sensor_power_down(s_ctrl);
 			msleep(20);
-			goto free_power_settings;
+			kfree(pu);
+			kfree(pd);
+			goto release_mutex;
 		}
 
 		CAM_INFO(CAM_SENSOR,
@@ -783,7 +812,9 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		rc = cam_sensor_power_down(s_ctrl);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR, "fail in Sensor Power Down");
-			goto free_power_settings;
+			kfree(pu);
+			kfree(pd);
+			goto release_mutex;
 		}
 		/*
 		 * Set probe succeeded flag to 1 so that no other camera shall
@@ -863,7 +894,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			goto release_mutex;
 		}
 
-		cam_sensor_release_per_frame_resource(s_ctrl);
+		cam_sensor_release_resource(s_ctrl);
 		cam_sensor_release_stream_rsc(s_ctrl);
 		if (s_ctrl->bridge_intf.device_hdl == -1) {
 			CAM_ERR(CAM_SENSOR,
@@ -948,7 +979,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			}
 		}
 
-		cam_sensor_release_per_frame_resource(s_ctrl);
+		cam_sensor_release_resource(s_ctrl);
 		s_ctrl->sensor_state = CAM_SENSOR_ACQUIRE;
 		CAM_INFO(CAM_SENSOR,
 			"CAM_STOP_DEV Success, sensor_id:0x%x,sensor_slave_addr:0x%x",
@@ -1060,10 +1091,8 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 
 		luma_data.expo = ((reg_3500 & 0xf) << 8) + ((reg_3501 & 0xff) << 4) + ((reg_3502 & 0xff) >> 4);
 		luma_data.gain = reg_3509;
-		CAM_ERR(
-			CAM_SENSOR, "CAM_IR_LUMA_READ=0x%x, expo=0x%x, gain=0x%x.\n", CAM_IR_LUMA_READ,
-			luma_data.expo, luma_data.gain
-		);
+		CAM_ERR(CAM_SENSOR, "CAM_IR_LUMA_READ=0x%x, expo=0x%x, gain=0x%x. \n",
+			CAM_IR_LUMA_READ, luma_data.expo, luma_data.gain);
 
 		if (copy_to_user((void __user *)cmd->handle, &luma_data, sizeof(luma_data)) || ret != 0) {
 			CAM_ERR(CAM_SENSOR, "Copy state to user space failed\n");
@@ -1079,16 +1108,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	}
 
 release_mutex:
-	mutex_unlock(&(s_ctrl->cam_sensor_mutex));
-	return rc;
-
-free_power_settings:
-	kfree(power_info->power_setting);
-	kfree(power_info->power_down_setting);
-	power_info->power_setting = NULL;
-	power_info->power_down_setting = NULL;
-	power_info->power_down_setting_size = 0;
-	power_info->power_setting_size = 0;
 	mutex_unlock(&(s_ctrl->cam_sensor_mutex));
 	return rc;
 }
@@ -1246,7 +1265,7 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 
 	if (req_id == 0) {
 		switch (opcode) {
-		CAM_DBG(CAM_SENSOR, "[CDBG] opcode: %d", opcode);
+		CAM_DBG(CAM_SENSOR,"[CDBG] opcode: %d", opcode);
 		case CAM_SENSOR_PACKET_OPCODE_SENSOR_STREAMON: {
 			i2c_set = &s_ctrl->i2c_data.streamon_settings;
 			break;
@@ -1271,9 +1290,9 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 		if (i2c_set->is_settings_valid == 1) {
 			list_for_each_entry(i2c_list,
 				&(i2c_set->list_head), list) {
-				CAM_DBG(CAM_SENSOR, "[CDBG] master type = %d", s_ctrl->io_master_info.master_type);
+				CAM_DBG(CAM_SENSOR,"[CDBG] master type = %d",s_ctrl->io_master_info.master_type);
 				for (i = 0; i < i2c_list->i2c_settings.size; i++) {
-					CAM_DBG(CAM_SENSOR, "[%04d] [CDBG] 0x%04X 0x%04X 0x%02X", i,
+					CAM_DBG(CAM_SENSOR,"[%04d] [CDBG] 0x%04X 0x%04X 0x%02X", i,
 						i2c_list->i2c_settings.reg_setting[i].reg_addr,
 						i2c_list->i2c_settings.reg_setting[i].reg_data,
 						i2c_list->i2c_settings.reg_setting[i].delay);
@@ -1317,8 +1336,8 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 				s_ctrl->i2c_data.per_frame[i].request_id) &&
 				(top <
 				s_ctrl->i2c_data.per_frame[i].request_id) &&
-				(s_ctrl->i2c_data.per_frame[i].is_settings_valid == 1)
-				) {
+				(s_ctrl->i2c_data.per_frame[i].
+				is_settings_valid == 1)) {
 				del_req_id = top;
 				top = s_ctrl->i2c_data.per_frame[i].request_id;
 			}

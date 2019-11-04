@@ -57,7 +57,6 @@ int cam_cci_init(struct v4l2_subdev *sd,
 		}
 		mutex_unlock(&cci_dev->cci_master_info[cci_master].mutex);
 	}
-
 	if (cci_dev->ref_count++) {
 		CAM_DBG(CAM_CCI, "ref_count %d", cci_dev->ref_count);
 		master = c_ctrl->cci_info->cci_i2c_master;
@@ -407,14 +406,12 @@ int cam_cci_soc_release(struct cci_device *cci_dev, struct cam_cci_ctrl *c_ctrl)
 			cci_dev->ref_count, cci_dev->cci_state);
 		return -EINVAL;
 	}
-
 	master = c_ctrl->cci_info->cci_i2c_master;
 	if (master < MASTER_MAX && master >= 0) {
 		mutex_lock(&cci_dev->cci_master_info[master].mutex);
 		cci_dev->ref_count_cci[master]--;
 		mutex_unlock(&cci_dev->cci_master_info[master].mutex);
 	}
-
 	if (--cci_dev->ref_count) {
 		CAM_DBG(CAM_CCI, "ref_count Exit %d", cci_dev->ref_count);
 		return 0;

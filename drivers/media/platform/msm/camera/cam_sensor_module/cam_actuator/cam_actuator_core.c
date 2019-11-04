@@ -11,9 +11,7 @@
  */
 
 #include <linux/module.h>
-#ifdef CONFIG_USE_BU64748
 #include <linux/firmware.h>
-#endif
 #include <cam_sensor_cmn_header.h>
 #include "cam_actuator_core.h"
 #include "cam_sensor_util.h"
@@ -22,10 +20,8 @@
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
 
-#ifdef CONFIG_USE_BU64748
-#define FIRMWARE_NAME		"bu64748gwz.prog"
-#define ACTUATOR_TRANS_SIZE	32
-#endif
+#define FIRMWARE_NAME "bu64748gwz.prog"
+#define ACTUATOR_TRANS_SIZE 32
 
 #ifdef CONFIG_USE_ROHM_BU64753
 extern uint8_t g_eeprom_mapdata[EEPROM_MAP_DATA_CNT];
@@ -68,7 +64,6 @@ int32_t cam_actuator_construct_default_power_setting(
 free_power_settings:
 	kfree(power_info->power_setting);
 	power_info->power_setting = NULL;
-	power_info->power_setting_size = 0;
 	return rc;
 }
 
@@ -121,7 +116,6 @@ static int cam_actuator_eeprom_drive_write(
 {
 	int32_t rc = 0;
 	struct cam_sensor_i2c_reg_setting write_setting;
-
 	write_setting.size = 1;
 	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
 	write_setting.data_type = i2c_type;
@@ -143,7 +137,6 @@ static int cam_actuator_write_power_off_cmd(struct cam_actuator_ctrl_t *a_ctrl)
 {
 	int32_t rc = 0;
 	struct cam_sensor_i2c_reg_array cam_vcm_reset_info;
-
 	cam_vcm_reset_info.reg_addr = 0x07;
 	cam_vcm_reset_info.reg_data = 0x0000;
 	cam_vcm_reset_info.delay = 0;
@@ -155,8 +148,9 @@ static int cam_actuator_write_power_off_cmd(struct cam_actuator_ctrl_t *a_ctrl)
 	}
 
 	rc = cam_actuator_eeprom_drive_write(cam_vcm_reset_info, a_ctrl, CAMERA_SENSOR_I2C_TYPE_WORD);
-	if (rc)
+	if (rc) {
 		CAM_ERR(CAM_ACTUATOR, "eeprom driver write failed:%d", rc);
+	}
 	return rc;
 }
 
@@ -203,8 +197,9 @@ static int cam_actuator_eeprom_data_write(
 	rc = camera_io_dev_read_seq(&(a_ctrl->io_master_info), 0xF7, id_vcm,
 			CAMERA_SENSOR_I2C_TYPE_BYTE, CAMERA_SENSOR_I2C_TYPE_BYTE, 2);
 	CAM_ERR(CAM_ACTUATOR, "check sum 0xF7 value [0x%x] id_vcm[0] = 0x%x, id_vcm[1] = 0x%x", (id_vcm[0] << 8) | id_vcm[1], id_vcm[0], id_vcm[1]);
-	if (rc < 0)
+	if (rc < 0) {
 		CAM_ERR(CAM_ACTUATOR, "check sum value error");
+	}
 
 	checksum = (id_vcm[0] << 8) | id_vcm[1];
 
@@ -337,17 +332,19 @@ static int cam_actuator_fw_init0(struct cam_actuator_ctrl_t *a_ctrl)
 {
 	int32_t rc = 0;
 	struct cam_sensor_i2c_reg_setting write_setting;
-
-	write_setting.size = sizeof(actuator_init0_array) /
-				sizeof(struct cam_sensor_i2c_reg_array);
+	write_setting.size = sizeof(actuator_init0_array)/sizeof(struct cam_sensor_i2c_reg_array);
 	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 	write_setting.delay = 0;
 	write_setting.reg_setting = actuator_init0_array;
 
-	rc = camera_io_dev_write(&(a_ctrl->io_master_info), &write_setting);
-	if (rc < 0)
-		CAM_ERR(CAM_ACTUATOR, "Failed in Applying i2c wrt settings");
+	rc = camera_io_dev_write(&(a_ctrl->io_master_info),
+		&write_setting);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR,
+			"Failed in Applying i2c wrt settings");
+		return rc;
+	}
 
 	return rc;
 }
@@ -356,21 +353,23 @@ struct cam_sensor_i2c_reg_array actuator_init1_array[] = {
 	{0x8c, 0x01, 0x0, 0x0},
 };
 
-static int cam_actuator_fw_init1(struct cam_actuator_ctrl_t*a_ctrl)
+static int cam_actuator_fw_init1(struct cam_actuator_ctrl_t *a_ctrl)
 {
 	int32_t rc = 0;
 	struct cam_sensor_i2c_reg_setting write_setting;
-
-	write_setting.size = sizeof(actuator_init1_array) /
-				sizeof(struct cam_sensor_i2c_reg_array);
+	write_setting.size =  sizeof(actuator_init1_array)/sizeof(struct cam_sensor_i2c_reg_array);
 	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
 	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
 	write_setting.delay = 0;
 	write_setting.reg_setting = actuator_init1_array;
 
-	rc = camera_io_dev_write(&(a_ctrl->io_master_info), &write_setting);
-	if (rc < 0)
-		CAM_ERR(CAM_ACTUATOR, "Failed in Applying i2c wrt settings");
+	rc = camera_io_dev_write(&(a_ctrl->io_master_info),
+		&write_setting);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR,
+			"Failed in Applying i2c wrt settings");
+		return rc;
+	}
 
 	return rc;
 }
@@ -379,21 +378,23 @@ struct cam_sensor_i2c_reg_array actuator_init2_array[] = {
 	{0x8430, 0x0d00, 0x0, 0x0},
 };
 
-static int cam_actuator_fw_init2(struct cam_actuator_ctrl_t*a_ctrl)
+static int cam_actuator_fw_init2(struct cam_actuator_ctrl_t *a_ctrl)
 {
 	int32_t rc = 0;
 	struct cam_sensor_i2c_reg_setting write_setting;
-
-	write_setting.size = sizeof(actuator_init2_array) /
-				sizeof(struct cam_sensor_i2c_reg_array);
+	write_setting.size =  sizeof(actuator_init2_array)/sizeof(struct cam_sensor_i2c_reg_array);
 	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_WORD;
 	write_setting.delay = 0;
 	write_setting.reg_setting = actuator_init2_array;
 
-	rc = camera_io_dev_write(&(a_ctrl->io_master_info), &write_setting);
-	if (rc < 0)
-		CAM_ERR(CAM_ACTUATOR, "Failed in Applying i2c wrt settings");
+	rc = camera_io_dev_write(&(a_ctrl->io_master_info),
+		&write_setting);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR,
+			"Failed in Applying i2c wrt settings");
+		return rc;
+	}
 
 	return rc;
 }
@@ -402,7 +403,9 @@ static int cam_actuator_fw_download(struct cam_actuator_ctrl_t *a_ctrl)
 {
 	uint16_t total_bytes = 0;
 	uint8_t *ptr = NULL;
-	int32_t rc = 0, cnt = 0, i = 0;
+	int32_t rc = 0;
+	int32_t cnt = 0;
+	int32_t i = 0;
 	uint32_t fw_size;
 	const struct firmware *fw = NULL;
 	const char *fw_name_prog = NULL;
@@ -416,18 +419,21 @@ static int cam_actuator_fw_download(struct cam_actuator_ctrl_t *a_ctrl)
 		return -EINVAL;
 	}
 
-	cam_actuator_fw_init0(a_ctrl);
+	rc = cam_actuator_fw_init0(a_ctrl);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR, "init0 failed exit");
+		return rc;
+	}
 
 	rc = camera_io_dev_read_seq(&(a_ctrl->io_master_info), 0x825f, id,
-					CAMERA_SENSOR_I2C_TYPE_WORD,
-					CAMERA_SENSOR_I2C_TYPE_WORD, 2);
-	if (rc < 0)
-		CAM_ERR(CAM_ACTUATOR, "check version 0x825f value [0x%x] error",
-			(id[0] << 8) | id[1]);
+			CAMERA_SENSOR_I2C_TYPE_WORD, CAMERA_SENSOR_I2C_TYPE_WORD, 2);
+
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR, "check version 0x825f value [0x%x] error", (id[0] << 8) | id[1]);
+	}
 
 	/* Load FW */
 	fw_name_prog = FIRMWARE_NAME;
-
 	dev = &(a_ctrl->pdev->dev);
 	if (!dev) {
 		CAM_ERR(CAM_ACTUATOR, "Invalid dev is null");
@@ -445,9 +451,9 @@ static int cam_actuator_fw_download(struct cam_actuator_ctrl_t *a_ctrl)
 	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
 	write_setting.size = total_bytes;
 	fw_size = PAGE_ALIGN(sizeof(struct cam_sensor_i2c_reg_array) *
-				total_bytes) >> PAGE_SHIFT;
-
-	page = cma_alloc(dev_get_cma_area(a_ctrl->soc_info.dev), fw_size, 0);
+			total_bytes) >> PAGE_SHIFT;
+	page = cma_alloc(dev_get_cma_area(a_ctrl->soc_info.dev),
+		fw_size, 0);
 	if (!page) {
 		CAM_ERR(CAM_ACTUATOR, "Failed in allocating i2c_array");
 		release_firmware(fw);
@@ -455,7 +461,7 @@ static int cam_actuator_fw_download(struct cam_actuator_ctrl_t *a_ctrl)
 	}
 
 	write_setting.reg_setting = (struct cam_sensor_i2c_reg_array *)(
-					page_address(page));
+			page_address(page));
 
 
 	write_setting.delay = 0;
@@ -470,15 +476,16 @@ static int cam_actuator_fw_download(struct cam_actuator_ctrl_t *a_ctrl)
 		write_setting.size = cnt;
 
 		rc = camera_io_dev_write_continuous(&(a_ctrl->io_master_info),
-							&write_setting, 1);
+			&write_setting, 1);
 		if (rc < 0)
-			CAM_ERR(CAM_ACTUATOR, "FW download failed %d", rc);
+			CAM_ERR(CAM_OIS, "FW download failed %d", rc);
 	}
+	CAM_ERR(CAM_ACTUATOR, "ACTUATOR FW download over..., i = %d", i);
 
-	cma_release(dev_get_cma_area(a_ctrl->soc_info.dev), page, fw_size);
+	cma_release(dev_get_cma_area(a_ctrl->soc_info.dev),
+		page, fw_size);
 	page = NULL;
 	fw_size = 0;
-
 	release_firmware(fw);
 
 	cam_actuator_fw_init1(a_ctrl);
@@ -543,14 +550,13 @@ static int32_t cam_actuator_power_up(struct cam_actuator_ctrl_t *a_ctrl)
 		return rc;
 	}
 
-#ifdef CONFIG_USE_BU64748
 	/* VREG needs some delay to power up */
 	usleep_range(10000, 10050);
-#endif
 
 	rc = camera_io_init(&a_ctrl->io_master_info);
 	if (rc < 0)
 		CAM_ERR(CAM_ACTUATOR, "cci init failed: rc: %d", rc);
+	CAM_ERR(CAM_ACTUATOR, " cam sensor io init");
 
 	return rc;
 }
@@ -570,8 +576,9 @@ static int32_t cam_actuator_power_down(struct cam_actuator_ctrl_t *a_ctrl)
 #ifdef CONFIG_USE_ROHM_BU64753
 	if (a_ctrl->io_master_info.cci_client->sid == ROHM_ACTUATOR_II2_ADDR)
 		rc = cam_actuator_write_power_off_cmd(a_ctrl);
-	if (rc)
+	if (rc) {
 		CAM_ERR(CAM_ACTUATOR, "eeprom driver write failed:%d", rc);
+	}
 #endif
 
 	soc_private =
@@ -716,10 +723,7 @@ int32_t cam_actuator_apply_settings(struct cam_actuator_ctrl_t *a_ctrl,
 			CAM_ERR(CAM_ACTUATOR,
 				"Failed to apply settings: %d",
 				rc);
-		} else {
-			CAM_DBG(CAM_ACTUATOR,
-				"Success:request ID: %d",
-				i2c_set->request_id);
+			return rc;
 		}
 	}
 
@@ -747,7 +751,7 @@ int32_t cam_actuator_apply_request(struct cam_req_mgr_apply_request *apply)
 	trace_cam_apply_req("Actuator", apply->request_id);
 
 	CAM_DBG(CAM_ACTUATOR, "Request Id: %lld", apply->request_id);
-	mutex_lock(&(a_ctrl->actuator_mutex));
+
 	if ((apply->request_id ==
 		a_ctrl->i2c_data.per_frame[request_id].request_id) &&
 		(a_ctrl->i2c_data.per_frame[request_id].is_settings_valid)
@@ -758,7 +762,7 @@ int32_t cam_actuator_apply_request(struct cam_req_mgr_apply_request *apply)
 			CAM_ERR(CAM_ACTUATOR,
 				"Failed in applying the request: %lld\n",
 				apply->request_id);
-			goto release_mutex;
+			return rc;
 		}
 	}
 	del_req_id = (request_id +
@@ -773,14 +777,12 @@ int32_t cam_actuator_apply_request(struct cam_req_mgr_apply_request *apply)
 			CAM_ERR(CAM_ACTUATOR,
 				"Fail deleting the req: %d err: %d\n",
 				del_req_id, rc);
-			goto release_mutex;
+			return rc;
 		}
 	} else {
 		CAM_DBG(CAM_ACTUATOR, "No Valid Req to clean Up");
 	}
 
-release_mutex:
-	mutex_unlock(&(a_ctrl->actuator_mutex));
 	return rc;
 }
 
@@ -812,28 +814,6 @@ int32_t cam_actuator_establish_link(
 	mutex_unlock(&(a_ctrl->actuator_mutex));
 
 	return 0;
-}
-
-static void cam_actuator_update_req_mgr(
-	struct cam_actuator_ctrl_t *a_ctrl,
-	struct cam_packet *csl_packet)
-{
-	struct cam_req_mgr_add_request add_req;
-
-	add_req.link_hdl = a_ctrl->bridge_intf.link_hdl;
-	add_req.req_id = csl_packet->header.request_id;
-	add_req.dev_hdl = a_ctrl->bridge_intf.device_hdl;
-	add_req.skip_before_applying = 0;
-
-	if (a_ctrl->bridge_intf.crm_cb &&
-		a_ctrl->bridge_intf.crm_cb->add_req) {
-		a_ctrl->bridge_intf.crm_cb->add_req(&add_req);
-		CAM_DBG(CAM_ACTUATOR, "Request Id: %lld added to CRM",
-			add_req.req_id);
-	} else {
-		CAM_ERR(CAM_ACTUATOR, "Can't add Request ID: %lld to CRM",
-			csl_packet->header.request_id);
-	}
 }
 
 int32_t cam_actuator_publish_dev_info(struct cam_req_mgr_device_info *info)
@@ -869,6 +849,7 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 	struct i2c_data_settings  *i2c_data = NULL;
 	struct i2c_settings_array *i2c_reg_settings = NULL;
 	struct cam_cmd_buf_desc   *cmd_desc = NULL;
+	struct cam_req_mgr_add_request  add_req;
 	struct cam_actuator_soc_private *soc_private = NULL;
 	struct cam_sensor_power_ctrl_t  *power_info = NULL;
 
@@ -1018,31 +999,38 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 		io_master_info = &(a_ctrl->io_master_info);
 		cci_client = io_master_info->cci_client;
 
-		if ((cci_client != NULL) && ((cci_client->sid) == ROHM_ACTUATOR_II2_ADDR))
+		if ((cci_client != NULL) && ((cci_client->sid) == ROHM_ACTUATOR_II2_ADDR)) {
 			rc = cam_actuator_eeprom_data_write(g_eeprom_mapdata, a_ctrl);
-			if (rc < 0)
+			if (rc < 0) {
 				CAM_ERR(CAM_ACTUATOR, "Write Init Driver Data To Actuator failed");
+			}
+		}
 #endif
 
 #ifdef CONFIG_USE_BU64748
-			if (a_ctrl->io_master_info.cci_client->sid == 0xEC / 2) {
-				CAM_DBG(CAM_ACTUATOR,
-					"init setting dac 1st supply");
+
+			if (a_ctrl->io_master_info.cci_client->sid == 0xEC/2)
+			{
 				rc = cam_actuator_fw_download(a_ctrl);
-				if (rc)
-					CAM_ERR(CAM_ACTUATOR,
-						"Failed ACTUATOR FW Download");
+
+				if (rc) {
+					CAM_ERR(CAM_ACTUATOR, "Failed ACTUATOR FW Download");
+					return rc;
+				}
 			}
 #endif
 		}
 
 #ifdef CONFIG_USE_BU64748
-		if (a_ctrl->io_master_info.cci_client->sid == 0x18 / 2) {
+
+		CAM_ERR(CAM_ACTUATOR, "before init setting dac sid num %x ", a_ctrl->io_master_info.cci_client->sid);
+		if (a_ctrl->io_master_info.cci_client->sid == 0x18/2)
+		{
 			rc = cam_actuator_apply_settings(a_ctrl,
-						&a_ctrl->i2c_data.init_settings);
+					&a_ctrl->i2c_data.init_settings);
+			CAM_ERR(CAM_ACTUATOR, "init setting dac");
 			if (rc < 0) {
-				CAM_ERR(CAM_ACTUATOR,
-					"Cannot apply Init settings");
+				CAM_ERR(CAM_ACTUATOR, "Cannot apply Init settings");
 				return rc;
 			}
 		}
@@ -1051,6 +1039,7 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 #ifndef CONFIG_USE_BU64748
 		rc = cam_actuator_apply_settings(a_ctrl,
 			&a_ctrl->i2c_data.init_settings);
+		CAM_ERR(CAM_ACTUATOR, "init setting dac");
 		if (rc < 0) {
 			CAM_ERR(CAM_ACTUATOR, "Cannot apply Init settings");
 			return rc;
@@ -1093,7 +1082,6 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 				"Auto move lens parsing failed: %d", rc);
 			return rc;
 		}
-		cam_actuator_update_req_mgr(a_ctrl, csl_packet);
 		break;
 	case CAM_ACTUATOR_PACKET_MANUAL_MOVE_LENS:
 		if (a_ctrl->cam_act_state < CAM_ACTUATOR_CONFIG) {
@@ -1103,13 +1091,11 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 				a_ctrl->cam_act_state);
 			return rc;
 		}
-
-		a_ctrl->setting_apply_state = ACT_APPLY_SETTINGS_LATER;
 		i2c_data = &(a_ctrl->i2c_data);
 		i2c_reg_settings = &i2c_data->per_frame[
 			csl_packet->header.request_id % MAX_PER_FRAME_ARRAY];
 
-		 i2c_reg_settings->request_id =
+		i2c_data->init_settings.request_id =
 			csl_packet->header.request_id;
 		i2c_reg_settings->is_settings_valid = 1;
 		offset = (uint32_t *)&csl_packet->payload;
@@ -1124,19 +1110,20 @@ int32_t cam_actuator_i2c_pkt_parse(struct cam_actuator_ctrl_t *a_ctrl,
 				"Manual move lens parsing failed: %d", rc);
 			return rc;
 		}
-
-		cam_actuator_update_req_mgr(a_ctrl, csl_packet);
 		break;
-	case CAM_PKT_NOP_OPCODE:
-		if (a_ctrl->cam_act_state < CAM_ACTUATOR_CONFIG) {
-			CAM_WARN(CAM_ACTUATOR,
-				"Received NOP packets in invalid state: %d",
-				a_ctrl->cam_act_state);
-			return -EINVAL;
-		}
+	}
 
-		cam_actuator_update_req_mgr(a_ctrl, csl_packet);
-		break;
+	if ((csl_packet->header.op_code & 0xFFFFFF) !=
+		CAM_ACTUATOR_PACKET_OPCODE_INIT) {
+		add_req.link_hdl = a_ctrl->bridge_intf.link_hdl;
+		add_req.req_id = csl_packet->header.request_id;
+		add_req.dev_hdl = a_ctrl->bridge_intf.device_hdl;
+		add_req.skip_before_applying = 0;
+		if (a_ctrl->bridge_intf.crm_cb &&
+			a_ctrl->bridge_intf.crm_cb->add_req)
+			a_ctrl->bridge_intf.crm_cb->add_req(&add_req);
+		CAM_DBG(CAM_ACTUATOR, "Req Id: %lld added to Bridge",
+			add_req.req_id);
 	}
 
 	return rc;
@@ -1173,8 +1160,6 @@ void cam_actuator_shutdown(struct cam_actuator_ctrl_t *a_ctrl)
 	kfree(power_info->power_down_setting);
 	power_info->power_setting = NULL;
 	power_info->power_down_setting = NULL;
-	power_info->power_setting_size = 0;
-	power_info->power_down_setting_size = 0;
 
 	a_ctrl->cam_act_state = CAM_ACTUATOR_INIT;
 }
@@ -1184,18 +1169,11 @@ int32_t cam_actuator_driver_cmd(struct cam_actuator_ctrl_t *a_ctrl,
 {
 	int rc = 0;
 	struct cam_control *cmd = (struct cam_control *)arg;
-	struct cam_actuator_soc_private *soc_private = NULL;
-	struct cam_sensor_power_ctrl_t  *power_info = NULL;
 
 	if (!a_ctrl || !cmd) {
-		CAM_ERR(CAM_ACTUATOR, "Invalid Args");
+		CAM_ERR(CAM_ACTUATOR, " Invalid Args");
 		return -EINVAL;
 	}
-
-	soc_private =
-		(struct cam_actuator_soc_private *)a_ctrl->soc_info.soc_private;
-
-	power_info = &soc_private->power_info;
 
 	if (cmd->handle_type != CAM_HANDLE_USER_POINTER) {
 		CAM_ERR(CAM_ACTUATOR, "Invalid handle type: %d",
@@ -1280,12 +1258,6 @@ int32_t cam_actuator_driver_cmd(struct cam_actuator_ctrl_t *a_ctrl,
 		a_ctrl->bridge_intf.link_hdl = -1;
 		a_ctrl->bridge_intf.session_hdl = -1;
 		a_ctrl->cam_act_state = CAM_ACTUATOR_INIT;
-		kfree(power_info->power_setting);
-		kfree(power_info->power_down_setting);
-		power_info->power_setting = NULL;
-		power_info->power_down_setting = NULL;
-		power_info->power_down_setting_size = 0;
-		power_info->power_setting_size = 0;
 	}
 		break;
 	case CAM_QUERY_CAP: {
@@ -1393,11 +1365,6 @@ int32_t cam_actuator_flush_request(struct cam_req_mgr_flush_request *flush_req)
 		return -EINVAL;
 	}
 
-	if (a_ctrl->i2c_data.per_frame == NULL) {
-		CAM_ERR(CAM_ACTUATOR, "i2c frame data is NULL");
-		return -EINVAL;
-	}
-
 	for (i = 0; i < MAX_PER_FRAME_ARRAY; i++) {
 		i2c_set = &(a_ctrl->i2c_data.per_frame[i]);
 
@@ -1406,9 +1373,7 @@ int32_t cam_actuator_flush_request(struct cam_req_mgr_flush_request *flush_req)
 			continue;
 
 		if (i2c_set->is_settings_valid == 1) {
-			mutex_lock(&(a_ctrl->actuator_mutex));
 			rc = delete_request(i2c_set);
-			mutex_unlock(&(a_ctrl->actuator_mutex));
 			if (rc < 0)
 				CAM_ERR(CAM_ACTUATOR,
 					"delete request: %lld rc: %d",
