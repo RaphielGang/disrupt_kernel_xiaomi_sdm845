@@ -857,7 +857,7 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
 			};
 		};
@@ -873,7 +873,7 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
 			};
 		};
@@ -888,7 +888,7 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
 			};
 		};
@@ -903,7 +903,7 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
 			};
 		};
@@ -918,13 +918,8 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
-			};
-			shutdown-config {
-				temperature = <59000>;
-				hysteresis = <1000>;
-				type = "critical";
 			};
 		};
 	};
@@ -938,7 +933,7 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
 			};
 		};
@@ -953,7 +948,7 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
 			};
 		};
@@ -968,7 +963,7 @@
 		trips {
 			active-config0 {
 				temperature = <125000>;
-				hysteresis = <1000>;
+				hysteresis = <10000>;
 				type = "passive";
 			};
 		};
