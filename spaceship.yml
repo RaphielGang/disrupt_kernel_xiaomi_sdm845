@@ -5,8 +5,8 @@ clone:
   depth: 1
 
 steps:
-- name: clone_dependencies
-  image: raphielscape/spinsinfra:fedora
+- name: clone_deps
+  image: raphielscape/spinsinfra:archlinux
   pull: always
   commands:
     - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
@@ -14,12 +14,13 @@ steps:
     - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git arm64cc
     - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
 
-- name: do_beryllium
-  image: raphielscape/spinsinfra:fedora
+- name: beryllium
+  image: raphielscape/spinsinfra:archlinux
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
-    EXEC: beryllium
+    DEVICE: beryllium
+    DEFCONFIG: raph_beryllium_defconfig
     CC: Clang
     KERNELDIR: /drone/src/
   commands:
@@ -28,13 +29,29 @@ steps:
     branch:
       - rebase-sdm-10
 
-- name: do_dipper
-  image: raphielscape/spinsinfra:fedora
+- name: dipper
+  image: raphielscape/spinsinfra:archlinux
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
-    EXEC: dipper
     CC: Clang
+    DEVICE: dipper
+    DEFCONFIG: raph_dipper_defconfig
+    KERNELDIR: /drone/src/
+  commands:
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - rebase-sdm-10
+
+- name: polaris
+  image: raphielscape/spinsinfra:archlinux
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    CC: Clang
+    DEVICE: polaris
+    DEFCONFIG: raph_polaris_defconfig
     KERNELDIR: /drone/src/
   commands:
     - ./buildscripts/kernel.sh
