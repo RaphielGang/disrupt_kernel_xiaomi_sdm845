@@ -11,6 +11,7 @@ steps:
   commands:
     - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
     - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
+    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git arm64cc
     - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
 
 - name: beryllium
@@ -20,7 +21,7 @@ steps:
       from_secret: BOT_API_KEY
     DEVICE: beryllium
     DEFCONFIG: raph_beryllium_defconfig
-    CC: Clang
+    CC: GCC
     KERNELDIR: /drone/src/
   commands:
     - ./buildscripts/kernel.sh
@@ -33,7 +34,7 @@ steps:
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
-    CC: Clang
+    CC: GCC
     DEVICE: dipper
     DEFCONFIG: raph_dipper_defconfig
     KERNELDIR: /drone/src/
@@ -48,7 +49,7 @@ steps:
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
-    CC: Clang
+    CC: GCC
     DEVICE: polaris
     DEFCONFIG: raph_polaris_defconfig
     KERNELDIR: /drone/src/
