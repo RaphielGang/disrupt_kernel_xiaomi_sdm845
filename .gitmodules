@@ -1,0 +1,8 @@
+[submodule "drivers/input/touchscreen/nvt-touch"]
+	path = drivers/input/touchscreen/nvt-touch
+	url = https://github.com/RaphielGang/spins-kernel-sdm845-xiaomi-modules.git
+	branch = nvt-touch
+[submodule "techpack/audio"]
+	path = techpack/audio
+	url = https://github.com/RaphielGang/spins-kernel-sdm845-xiaomi-modules.git
+	branch = audio-kernel
