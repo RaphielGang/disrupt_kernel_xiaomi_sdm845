@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2019 Raphiel Rollerscaperers <raphielscape@raphielgang.org>
+ */
+
+#include "sdm845-xiaomi-beryllium-display.dtsi"
+#include "sdm845-xiaomi-beryllium-audio.dtsi"
+#include "sdm845-xiaomi-beryllium-digitizer.dtsi"
+
+/ {
+	reserved-memory {
+		ramoops@b0000000 {
+			compatible = "ramoops";
+			reg = <0 0xb0000000 0 0x400000>;
+			record-size = <0x40000>;
+			console-size = <0x40000>;
+			ftrace-size = <0x40000>;
+			pmsg-size = <0x200000>;
+			ecc-size = <0>;
+		};
+	};
+}
+
+&removed_region {
+	reg = <0 0x85fc0000 0 0x4940000>;
+};
+
+&pcie0 {
+	status = "disabled";
+};
+
+&pcie1 {
+	status = "disabled";
+};
+
+&firmware {
+	android {
+		fstab {
+			system {
+				compatible = "android,system";
+				dev = "/dev/block/platform/soc/1d84000.ufshc/by-name/system";
+				fsmgr_flags = "wait";
+				mnt_flags = "ro,barrier=1,discard";
+				type = "ext4";
+			};
+
+			vendor {
+				fsmgr_flags = "wait";
+			};
+		};
+
+		/delete-node/ vbmeta;
+	};
+};

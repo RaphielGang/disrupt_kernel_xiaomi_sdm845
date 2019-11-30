@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2019 Raphiel Rollerscaperers <raphielscape@raphielgang.org>
+ */
+
+&qupv3_se14_i2c {
+	status = "ok";
+	/* Novatek digitizer device tree node */
+	novatek@62 {
+		compatible = "novatek,NVT-ts";
+		reg = <0x62>;
+		status = "ok";
+
+		vddio-supply = <&pm8998_l14>;
+		lab-supply = <&lab_regulator>;
+		ibb-supply = <&ibb_regulator>;
+		novatek,vddio-reg-name = "vddio";
+		novatek,lab-reg-name = "lab";
+		novatek,ibb-reg-name = "ibb";
+
+		novatek,reset-tddi = <&tlmm 6 0x00>;
+		novatek,reset-gpio = <&tlmm 32 0x00>;
+		novatek,irq-gpio = <&tlmm 31 0x2001>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		novatek,config-array-size = <2>;
+
+		/* E10 hardware 1.0 */
+		novatek,cfg_0 {
+			novatek,tp-vendor = <0x46>;
+			novatek,hw-version = <0x1>;
+			novatek,fw-name = "novatek_nt36672_e10_hw01.fw";
+		};
+
+		/* E10 hardware 1.1 */
+		novatek,cfg_1 {
+			novatek,tp-vendor = <0x46>;
+			novatek,hw-version = <0x2>;
+			novatek,fw-name = "novatek_nt36672_e10_hw02.fw";
+		};
+	};
+};

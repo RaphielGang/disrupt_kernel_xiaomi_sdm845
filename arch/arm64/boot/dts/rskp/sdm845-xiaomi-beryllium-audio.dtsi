@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018 XiaoMi, Inc.
+ * Copyright (c) 2019 Raphiel Rollerscaperers <raphielscape@raphielgang.org>
+ */
+
+#include "../qcom/sdm845-audio-overlay.dtsi"
+
+&snd_934x {
+	qcom,audio-routing =
+		"AIF4 VI", "MCLK",
+		"RX_BIAS", "MCLK",
+		"MADINPUT", "MCLK",
+		"hifi amp", "LINEOUT1",
+		"hifi amp", "LINEOUT2",
+		"AMIC2", "MIC BIAS2",
+		"MIC BIAS2", "Headset Mic",
+		"AMIC3", "MIC BIAS3",
+		"MIC BIAS3", "ANCRight Headset Mic",
+		"AMIC1", "MIC BIAS1",
+		"MIC BIAS1", "ANCLeft Headset Mic",
+		"AMIC4", "MIC BIAS3",
+		"MIC BIAS3", "ANCRight Headset Mic",
+		"AMIC5", "MIC BIAS4",
+		"MIC BIAS4", "Analog Mic5";
+
+	qcom,msm-mbhc-hphl-swh = <1>;
+	qcom,msm-mbhc-gnd-swh = <1>;
+	qcom,wsa-max-devs = <0>;
+	qcom,uart-audio-sw-gpio = <&sbu_uart_en>;
+	qcom,msm-mbhc-usbc-audio-supported = <0>;
+	pinctrl-names = "aud_active", "aud_sleep",
+			"quat-mi2s-active", "quat-mi2s-sleep",
+			"quat-tdm-active", "quat-tdm-sleep";
+	pinctrl-0 = <&wcd_usbc_analog_en2_active>;
+	pinctrl-1 = <&wcd_usbc_analog_en2_idle>;
+	pinctrl-2 = <&quat_mi2s_active &quat_mi2s_sd0_active
+				&quat_mi2s_sd1_active>;
+	pinctrl-3 = <&quat_mi2s_sleep &quat_mi2s_sd0_sleep
+				&quat_mi2s_sd1_sleep>;
+	pinctrl-4 = <&quat_tdm_active &quat_tdm_dout_active>;
+	pinctrl-5 = <&quat_tdm_sleep &quat_tdm_dout_sleep>;
+
+};
+
+&wcd_usbc_analog_en1_gpio {
+	qcom,lpi-gpios;
+};
+
+&slim_aud {
+	tavil_codec {
+		swr_master {
+			/* Disable unused wsa881x codecs */
+			wsa881x_0211: wsa881x@20170211 {
+				status = "disabled";
+			};
+			wsa881x_0212: wsa881x@20170212 {
+				status = "disabled";
+			};
+			wsa881x_0213: wsa881x@21170213 {
+				status = "disabled";
+			};
+			wsa881x_0214: wsa881x@21170214 {
+				status = "disabled";
+			};
+		};
+	};
+};
+
+&qupv3_se5_i2c {
+	status = "ok";
+	/* smart PA */
+	tas2559@4c {
+			compatible = "ti,tas2559";
+			reg = <0x4c>;
+			ti,tas2559-reset-gpio = <&tlmm 12 0>;
+			ti,tas2560-reset-gpio = <&tlmm 76 0>;
+			ti,tas2559-irq-gpio = <&tlmm 11 0>;
+			ti,tas2560-irq-gpio = <&tlmm 30 0>;
+			ti,tas2559-addr = <0x4c>;
+			ti,tas2560-addr = <0x4d>;
+			ti,tas2559-channel = <0>; /* 0, left; 1, right */
+			ti,tas2560-channel = <1>; /* 0, left; 1, right */
+			ti,ycrc-enable = <1>;           /* 0, disable; non-zero, enable */
+			ti,echo-ref = <0>;              /* 0, left channel; 1, right channel; 2, both */
+			ti,bit-rate = <16>;             /* 16, 20, 24, 32 */
+			status = "ok";
+	};
+};
+
+&pmi8998_haptics {
+	qcom,overdrive;
+	qcom,vmax-mv = <2812>;
+	qcom,wave-play-rate-us = <4878>;
+	qcom,wave-shape = "sine";
+	qcom,effect-max = <3>;
+	qcom,effect-arry = [3e 3e be a0 00 00 00 00
+		3e 3e 3e be be 00 00 00
+		3e 3e 3e 3e be be a0 90];
+	qcom,play-mode = "buffer";
+	status = "okay";
+};
+
+&soc {
+	sbu_uart_en: msm_cdc_pinctrl@49 {
+		compatible = "qcom,msm-cdc-pinctrl";
+		pinctrl-names = "aud_active", "aud_sleep";
+		pinctrl-0 = <&sbu_uart_en_active>;
+		pinctrl-1 = <&sbu_uart_en_idle>;
+	};
+};

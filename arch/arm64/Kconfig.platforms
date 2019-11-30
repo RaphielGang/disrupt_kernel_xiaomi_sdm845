@@ -147,6 +147,15 @@ config ARCH_SDM845_VM
 	  To compile this driver as a module, choose M here: the
 	  module will be called SDM845_VM.
 
+config BOARD_BERYLLIUM
+	bool "Enable Support for Xiaomi POCOPHONE F1 (Beryllium)"
+	depends on ARCH_QCOM
+	select ARCH_SDM845
+	help
+	  This enables support for Pocophone F1 with SDM845 chipset.
+	  If you do not wish to build a kernel that runs on this board,
+	  say 'N' here.
+
 config ARCH_SDM670
 	bool "Enable Support for Qualcomm Technologies Inc. SDM670"
 	depends on ARCH_QCOM

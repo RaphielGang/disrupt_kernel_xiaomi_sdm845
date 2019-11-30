@@ -13,6 +13,7 @@ dts-dirs += marvell
 dts-dirs += mediatek
 dts-dirs += nvidia
 dts-dirs += qcom
+dts-dirs += rskp
 dts-dirs += renesas
 dts-dirs += rockchip
 dts-dirs += socionext
