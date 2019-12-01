@@ -1071,7 +1071,9 @@ static int msm_disable_all_modes(
 		drm_modeset_backoff(ctx);
 	}
 
-	drm_atomic_state_free(state);
+	/* on successful atomic commit state ownership transfers to framework */
+	if (ret != 0)
+		drm_atomic_state_free(state);
 
 	return ret;
 }
