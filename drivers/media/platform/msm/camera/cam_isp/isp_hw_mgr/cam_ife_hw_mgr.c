@@ -4333,7 +4333,7 @@ int cam_ife_mgr_do_tasklet(void *handler_priv, void *evt_payload_priv)
 
 	evt_payload = evt_payload_priv;
 	if (!handler_priv)
-		goto put_payload;
+		return rc;
 
 	ife_hwr_mgr_ctx = (struct cam_ife_hw_mgr_ctx *)handler_priv;
 
