@@ -2743,7 +2743,7 @@ static bool sd_validate_opt_xfer_size(struct scsi_disk *sdkp,
 {
 	struct scsi_device *sdp = sdkp->device;
 	unsigned int opt_xfer_bytes =
-		logical_to_bytes(sdp, sdkp->opt_xfer_blocks);
+		sdkp->opt_xfer_blocks * sdp->sector_size;
 
 	if (sdkp->opt_xfer_blocks == 0)
 		return false;
