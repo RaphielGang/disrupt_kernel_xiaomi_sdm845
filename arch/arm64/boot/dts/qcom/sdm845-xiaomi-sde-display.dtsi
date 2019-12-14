@@ -611,8 +611,8 @@
 };
 
 &dsi_tianma_fhd_nt36672a_video {
-	qcom,mdss-dsi-t-clk-post = <0x0E>;
-	qcom,mdss-dsi-t-clk-pre = <0x33>;
+	qcom,mdss-dsi-t-clk-post = <0x0A>;
+	qcom,mdss-dsi-t-clk-pre = <0x35>;
 	qcom,mdss-dsi-display-timings {
 		timing@0{
 			qcom,mdss-dsi-panel-phy-timings = [00 21 08 08 25 22 09 08 06 03 04 00];
