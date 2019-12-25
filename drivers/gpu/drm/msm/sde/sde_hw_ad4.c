@@ -48,15 +48,6 @@ enum ad4_state {
 	ad4_state_max,
 };
 
-struct ad4_roi_info {
-	u32 h_start;
-	u32 h_end;
-	u32 v_start;
-	u32 v_end;
-	u32 f_in;
-	u32 f_out;
-};
-
 typedef int (*ad4_prop_setup)(struct sde_hw_dspp *dspp,
 		struct sde_ad_hw_cfg *ad);
 
@@ -86,11 +77,6 @@ static int ad4_cfg_setup_ipcr(struct sde_hw_dspp *dspp,
 		struct sde_ad_hw_cfg *cfg);
 static int ad4_input_setup(struct sde_hw_dspp *dspp,
 		struct sde_ad_hw_cfg *cfg);
-static int ad4_roi_setup(struct sde_hw_dspp *dspp, struct sde_ad_hw_cfg *cfg);
-static int ad4_roi_setup_ipcr(struct sde_hw_dspp *dspp,
-		struct sde_ad_hw_cfg *cfg);
-static int ad4_roi_coordinate_offset(struct sde_hw_cp_cfg *hw_cfg,
-		struct ad4_roi_info *output);
 static int ad4_input_setup_idle(struct sde_hw_dspp *dspp,
 		struct sde_ad_hw_cfg *cfg);
 static int ad4_input_setup_ipcr(struct sde_hw_dspp *dspp,
@@ -138,7 +124,6 @@ static ad4_prop_setup prop_set_func[ad4_state_max][AD_PROPMAX] = {
 	[ad4_state_idle][AD_ASSERTIVE] = ad4_assertive_setup,
 	[ad4_state_idle][AD_BACKLIGHT] = ad4_backlight_setup,
 	[ad4_state_idle][AD_STRENGTH] = ad4_strength_setup_idle,
-	[ad4_state_idle][AD_ROI] = ad4_no_op_setup,
 	[ad4_state_idle][AD_IPC_SUSPEND] = ad4_no_op_setup,
 	[ad4_state_idle][AD_IPC_RESUME] = ad4_no_op_setup,
 	[ad4_state_idle][AD_IPC_RESET] = ad4_no_op_setup,
@@ -154,7 +139,6 @@ static ad4_prop_setup prop_set_func[ad4_state_max][AD_PROPMAX] = {
 	[ad4_state_startup][AD_BACKLIGHT] = ad4_backlight_setup,
 	[ad4_state_startup][AD_STRENGTH] = ad4_no_op_setup,
 	[ad4_state_startup][AD_IPC_SUSPEND] = ad4_no_op_setup,
-	[ad4_state_startup][AD_ROI] = ad4_roi_setup,
 	[ad4_state_startup][AD_IPC_RESUME] = ad4_no_op_setup,
 	[ad4_state_startup][AD_IPC_RESET] = ad4_ipc_reset_setup_startup,
 	[ad4_state_startup][AD_RESUME] = ad4_no_op_setup,
@@ -168,7 +152,6 @@ static ad4_prop_setup prop_set_func[ad4_state_max][AD_PROPMAX] = {
 	[ad4_state_run][AD_ASSERTIVE] = ad4_assertive_setup,
 	[ad4_state_run][AD_BACKLIGHT] = ad4_backlight_setup,
 	[ad4_state_run][AD_STRENGTH] = ad4_no_op_setup,
-	[ad4_state_run][AD_ROI] = ad4_roi_setup,
 	[ad4_state_run][AD_IPC_SUSPEND] = ad4_ipc_suspend_setup_run,
 	[ad4_state_run][AD_IPC_RESUME] = ad4_no_op_setup,
 	[ad4_state_run][AD_IPC_RESET] = ad4_setup_debug,
@@ -183,7 +166,6 @@ static ad4_prop_setup prop_set_func[ad4_state_max][AD_PROPMAX] = {
 	[ad4_state_ipcs][AD_ASSERTIVE] = ad4_no_op_setup,
 	[ad4_state_ipcs][AD_BACKLIGHT] = ad4_no_op_setup,
 	[ad4_state_ipcs][AD_STRENGTH] = ad4_no_op_setup,
-	[ad4_state_ipcs][AD_ROI] = ad4_no_op_setup,
 	[ad4_state_ipcs][AD_IPC_SUSPEND] = ad4_no_op_setup,
 	[ad4_state_ipcs][AD_IPC_RESUME] = ad4_ipc_resume_setup_ipcs,
 	[ad4_state_ipcs][AD_IPC_RESET] = ad4_no_op_setup,
@@ -198,7 +180,6 @@ static ad4_prop_setup prop_set_func[ad4_state_max][AD_PROPMAX] = {
 	[ad4_state_ipcr][AD_ASSERTIVE] = ad4_assertive_setup_ipcr,
 	[ad4_state_ipcr][AD_BACKLIGHT] = ad4_backlight_setup_ipcr,
 	[ad4_state_ipcr][AD_STRENGTH] = ad4_no_op_setup,
-	[ad4_state_ipcr][AD_ROI] = ad4_roi_setup_ipcr,
 	[ad4_state_ipcr][AD_IPC_SUSPEND] = ad4_ipc_suspend_setup_ipcr,
 	[ad4_state_ipcr][AD_IPC_RESUME] = ad4_no_op_setup,
 	[ad4_state_ipcr][AD_IPC_RESET] = ad4_ipc_reset_setup_ipcr,
@@ -213,7 +194,6 @@ static ad4_prop_setup prop_set_func[ad4_state_max][AD_PROPMAX] = {
 	[ad4_state_manual][AD_ASSERTIVE] = ad4_no_op_setup,
 	[ad4_state_manual][AD_BACKLIGHT] = ad4_no_op_setup,
 	[ad4_state_manual][AD_STRENGTH] = ad4_strength_setup,
-	[ad4_state_manual][AD_ROI] = ad4_no_op_setup,
 	[ad4_state_manual][AD_IPC_SUSPEND] = ad4_no_op_setup,
 	[ad4_state_manual][AD_IPC_RESUME] = ad4_no_op_setup,
 	[ad4_state_manual][AD_IPC_RESET] = ad4_setup_debug_manual,
@@ -229,19 +209,16 @@ struct ad4_info {
 	bool is_master;
 	u32 last_assertive;
 	u32 cached_assertive;
-	u32 last_str_inroi;
-	u32 last_str_outroi;
 	u64 last_als;
 	u64 cached_als;
 	u64 last_bl;
 	u64 cached_bl;
+	u32 last_str;
 	u32 frame_count;
 	u32 frmt_mode;
 	u32 irdx_control_0;
 	u32 tf_ctrl;
 	u32 vc_control_0;
-	struct ad4_roi_info last_roi_cfg;
-	struct ad4_roi_info cached_roi_cfg;
 	u32 frame_pushes;
 };
 
@@ -361,7 +338,7 @@ static int ad4_no_op_setup(struct sde_hw_dspp *dspp, struct sde_ad_hw_cfg *cfg)
 
 static int ad4_setup_debug(struct sde_hw_dspp *dspp, struct sde_ad_hw_cfg *cfg)
 {
-	u32 in_str = 0, out_str = 0;
+	u32 strength = 0;
 	struct sde_hw_mixer *hw_lm;
 
 	hw_lm = cfg->hw_cfg->mixer_info;
@@ -369,10 +346,9 @@ static int ad4_setup_debug(struct sde_hw_dspp *dspp, struct sde_ad_hw_cfg *cfg)
 		/* this AD core is the salve core */
 		return 0;
 
-	in_str = SDE_REG_READ(&dspp->hw, dspp->cap->sblk->ad.base + 0x4c);
-	out_str = SDE_REG_READ(&dspp->hw, dspp->cap->sblk->ad.base + 0x50);
-	pr_debug("%s(): AD in strength %d, out strength %d\n", __func__,
-				    in_str, out_str);
+	strength = SDE_REG_READ(&dspp->hw, dspp->cap->sblk->ad.base + 0x4c);
+	pr_debug("%s(): AD strength = %d\n", __func__, strength);
+
 	return 0;
 }
 
@@ -411,18 +387,6 @@ static int ad4_mode_setup(struct sde_hw_dspp *dspp, enum ad4_modes mode)
 		info[dspp->idx].cached_bl = U64_MAX;
 		info[dspp->idx].last_als = 0x0;
 		info[dspp->idx].cached_als = U64_MAX;
-		info[dspp->idx].last_roi_cfg.h_start = 0x0;
-		info[dspp->idx].last_roi_cfg.h_end = 0xffff;
-		info[dspp->idx].last_roi_cfg.v_start = 0x0;
-		info[dspp->idx].last_roi_cfg.v_end = 0xffff;
-		info[dspp->idx].last_roi_cfg.f_in = 0x400;
-		info[dspp->idx].last_roi_cfg.f_out = 0x400;
-		info[dspp->idx].cached_roi_cfg.h_start = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.h_end = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.v_start = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.v_end = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.f_in = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.f_out = U32_MAX;
 	} else {
 		if (mode == AD4_MANUAL) {
 			/*vc_control_0 */
@@ -823,6 +787,15 @@ static int ad4_cfg_setup(struct sde_hw_dspp *dspp, struct sde_ad_hw_cfg *cfg)
 	}
 	ad_cfg = cfg->hw_cfg->payload;
 
+	blk_offset = 0x18;
+	val = (ad_cfg->cfg_param_002 & (BIT(16) - 1));
+	val |= ((ad_cfg->cfg_param_001 & (BIT(16) - 1)) << 16);
+	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
+	blk_offset += 4;
+	val = (ad_cfg->cfg_param_004 & (BIT(16) - 1));
+	val |= ((ad_cfg->cfg_param_003 & (BIT(16) - 1)) << 16);
+	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
+
 	blk_offset = 0x20;
 	val = (ad_cfg->cfg_param_005 & (BIT(8) - 1));
 	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
@@ -838,6 +811,10 @@ static int ad4_cfg_setup(struct sde_hw_dspp *dspp, struct sde_ad_hw_cfg *cfg)
 
 	blk_offset = 0x3c;
 	val = (ad_cfg->cfg_param_010 & (BIT(12) - 1));
+	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
+	blk_offset += 4;
+	val = ((ad_cfg->cfg_param_011 & (BIT(16) - 1)) << 16);
+	val |= (ad_cfg->cfg_param_012 & (BIT(16) - 1));
 	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
 
 	blk_offset = 0x88;
@@ -933,6 +910,10 @@ static int ad4_cfg_setup(struct sde_hw_dspp *dspp, struct sde_ad_hw_cfg *cfg)
 
 	info[dspp->idx].vc_control_0 = (ad_cfg->cfg_param_041 & (BIT(7) - 1));
 
+	blk_offset = 0x160;
+	val = (ad_cfg->cfg_param_043 & (BIT(10) - 1));
+	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
+
 	blk_offset = 0x16c;
 	val = (ad_cfg->cfg_param_044 & (BIT(8) - 1));
 	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
@@ -971,145 +952,6 @@ static int ad4_input_setup(struct sde_hw_dspp *dspp,
 	info[dspp->idx].completed_ops_mask |= ad4_input;
 	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset,
 			info[dspp->idx].last_als);
-	return 0;
-}
-
-static int ad4_roi_setup(struct sde_hw_dspp *dspp,
-		struct sde_ad_hw_cfg *cfg)
-{
-	int ret = 0;
-	u32 blk_offset = 0, val = 0;
-	struct ad4_roi_info roi_cfg = {};
-
-	ret = ad4_roi_coordinate_offset(cfg->hw_cfg, &roi_cfg);
-	if (ret) {
-		DRM_ERROR("params invalid\n");
-		return -EINVAL;
-	}
-	info[dspp->idx].last_roi_cfg = roi_cfg;
-
-	/*roi h start and end*/
-	blk_offset = 0x18;
-	val = (info[dspp->idx].last_roi_cfg.h_end & (BIT(16) - 1));
-	val |= ((info[dspp->idx].last_roi_cfg.h_start & (BIT(16) - 1)) << 16);
-	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-
-	/*roi v start and end*/
-	blk_offset += 4;
-	val = (info[dspp->idx].last_roi_cfg.v_end & (BIT(16) - 1));
-	val |= ((info[dspp->idx].last_roi_cfg.v_start & (BIT(16) - 1)) << 16);
-	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-
-	/*roi factor in and out*/
-	blk_offset = 0x40;
-	val = ((info[dspp->idx].last_roi_cfg.f_in & (BIT(16) - 1)) << 16);
-	val |= (info[dspp->idx].last_roi_cfg.f_out & (BIT(16) - 1));
-	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-
-	return ret;
-}
-
-static int ad4_roi_setup_ipcr(struct sde_hw_dspp *dspp,
-		struct sde_ad_hw_cfg *cfg)
-{
-	int ret = 0;
-	struct ad4_roi_info roi_cfg = {};
-
-	ret = ad4_roi_coordinate_offset(cfg->hw_cfg, &roi_cfg);
-	if (ret) {
-		DRM_ERROR("params invalid\n");
-		return -EINVAL;
-	}
-
-	info[dspp->idx].cached_roi_cfg = roi_cfg;
-
-	return 0;
-}
-
-static int ad4_roi_coordinate_offset(struct sde_hw_cp_cfg *hw_cfg,
-						struct ad4_roi_info *output)
-{
-	struct sde_hw_mixer *hw_lm = hw_cfg->mixer_info;
-	struct drm_msm_ad4_roi_cfg *roi = NULL;
-
-	if (!hw_cfg->payload) {
-		output->h_start = 0x0;
-		output->h_end = hw_cfg->displayh;
-		output->v_start = 0x0;
-		output->v_end = hw_cfg->displayv;
-		output->f_in = 0x400;
-		output->f_out = 0x400;
-		return 0;
-	}
-
-	if (hw_cfg->len != sizeof(struct drm_msm_ad4_roi_cfg)) {
-		DRM_ERROR("invalid sz param exp %zd given %d cfg %pK\n",
-			sizeof(struct drm_msm_ad4_roi_cfg), hw_cfg->len,
-			hw_cfg->payload);
-		return -EINVAL;
-	}
-	roi = (struct drm_msm_ad4_roi_cfg *)hw_cfg->payload;
-
-	if (roi->h_x >= hw_cfg->displayh || roi->v_x >= hw_cfg->displayv) {
-		DRM_ERROR("invalid roi=[%u,%u,%u,%u], display=[%u,%u]\n",
-			roi->h_x, roi->h_y, roi->v_x, roi->v_y,
-			hw_cfg->displayh, hw_cfg->displayv);
-		return -EINVAL;
-	}
-
-	if (roi->h_x >= roi->h_y || roi->v_x >= roi->v_y) {
-		DRM_ERROR("invalid roi=[%u,%u,%u,%u], display=[%u,%u]\n",
-			roi->h_x, roi->h_y, roi->v_x, roi->v_y,
-			hw_cfg->displayh, hw_cfg->displayv);
-		return -EINVAL;
-	}
-
-	if (roi->h_y > hw_cfg->displayh)
-		roi->h_y = hw_cfg->displayh;
-
-	if (roi->v_y > hw_cfg->displayv)
-		roi->v_y = hw_cfg->displayv;
-
-	/* single dspp cfg */
-	output->h_start = roi->h_x;
-	output->h_end = roi->h_y;
-	output->v_start = roi->v_x;
-	output->v_end = roi->v_y;
-	output->f_in = roi->factor_in;
-	output->f_out = roi->factor_out;
-
-	/* check whether dual dspp */
-	if (hw_cfg->num_of_mixers != 2)
-		return 0;
-
-	if (roi->h_y <= hw_lm->cfg.out_width) {
-		if (hw_lm->cfg.right_mixer) {
-			/* the region on the left of screen, clear right info */
-			output->h_start = 0;
-			output->h_end = 0;
-			output->v_start = 0;
-			output->v_end = 0;
-		}
-	} else if (roi->h_x < hw_lm->cfg.out_width) {
-		/* the region occupy both sides of screen: left and right */
-		if (hw_lm->cfg.right_mixer) {
-			output->h_start = 0;
-			output->h_end -= hw_lm->cfg.out_width;
-		} else {
-			output->h_end = hw_lm->cfg.out_width;
-		}
-	} else {
-		/* the region on the right of the screen*/
-		if (hw_lm->cfg.right_mixer) {
-			output->h_start -= hw_lm->cfg.out_width;
-			output->h_end -= hw_lm->cfg.out_width;
-		} else {
-			output->h_start = 0;
-			output->h_end = 0;
-			output->v_start = 0;
-			output->v_end = 0;
-		}
-	}
 	return 0;
 }
 
@@ -1514,7 +1356,7 @@ void sde_read_intr_resp_ad4(struct sde_hw_dspp *dspp, u32 event,
 static int ad4_ipc_suspend_setup_run(struct sde_hw_dspp *dspp,
 		struct sde_ad_hw_cfg *cfg)
 {
-	u32 in_str = 0, out_str = 0, i = 0;
+	u32 strength = 0, i = 0;
 	struct sde_hw_mixer *hw_lm;
 
 	hw_lm = cfg->hw_cfg->mixer_info;
@@ -1522,21 +1364,16 @@ static int ad4_ipc_suspend_setup_run(struct sde_hw_dspp *dspp,
 		/* this AD core is the salve core */
 		for (i = DSPP_0; i < DSPP_MAX; i++) {
 			if (info[i].is_master) {
-				in_str = info[i].last_str_inroi;
-				out_str = info[i].last_str_outroi;
+				strength = info[i].last_str;
 				break;
 			}
 		}
 	} else {
-		in_str = SDE_REG_READ(&dspp->hw,
+		strength = SDE_REG_READ(&dspp->hw,
 				dspp->cap->sblk->ad.base + 0x4c);
-		out_str = SDE_REG_READ(&dspp->hw,
-				dspp->cap->sblk->ad.base + 0x50);
-		pr_debug("%s(): AD in strength %d, out %d\n", __func__,
-				in_str, out_str);
+		pr_debug("%s(): AD strength = %d\n", __func__, strength);
 	}
-	info[dspp->idx].last_str_inroi = in_str;
-	info[dspp->idx].last_str_outroi = out_str;
+	info[dspp->idx].last_str = strength;
 	info[dspp->idx].state = ad4_state_ipcs;
 	pr_debug("%s(): AD state move to ipcs\n", __func__);
 
@@ -1562,29 +1399,10 @@ static int ad4_ipc_resume_setup_ipcs(struct sde_hw_dspp *dspp,
 	blk_offset = 0x34;
 	val = (0x55 & (BIT(8) - 1));
 	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-
-	/* set roi config */
-	blk_offset = 0x18;
-	val = (info[dspp->idx].last_roi_cfg.h_end & (BIT(16) - 1));
-	val |= ((info[dspp->idx].last_roi_cfg.h_start & (BIT(16) - 1)) << 16);
-	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-	blk_offset += 4;
-	val = (info[dspp->idx].last_roi_cfg.v_end & (BIT(16) - 1));
-	val |= ((info[dspp->idx].last_roi_cfg.v_start & (BIT(16) - 1)) << 16);
-	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-	blk_offset = 0x40;
-	val = ((info[dspp->idx].last_roi_cfg.f_in & (BIT(16) - 1)) << 16);
-	val |= (info[dspp->idx].last_roi_cfg.f_out & (BIT(16) - 1));
-	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-
 	/* set manual strength */
 	blk_offset = 0x15c;
-	val = (info[dspp->idx].last_str_inroi & (BIT(10) - 1));
+	val = (info[dspp->idx].last_str & (BIT(10) - 1));
 	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-	blk_offset = 0x160;
-	val = (info[dspp->idx].last_str_outroi & (BIT(10) - 1));
-	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, val);
-
 	/* enable manual mode */
 	blk_offset = 0x138;
 	SDE_REG_WRITE(&dspp->hw, dspp->cap->sblk->ad.base + blk_offset, 0);
@@ -1604,7 +1422,7 @@ static int ad4_ipc_reset_setup_ipcr(struct sde_hw_dspp *dspp,
 		struct sde_ad_hw_cfg *cfg)
 {
 	int ret;
-	u32 in_str = 0, out_str = 0, i = 0;
+	u32 strength = 0, i = 0;
 	struct sde_hw_mixer *hw_lm;
 
 	/* Read AD calculator strength output during the 2 frames of manual
@@ -1617,25 +1435,20 @@ static int ad4_ipc_reset_setup_ipcr(struct sde_hw_dspp *dspp,
 		/* this AD core is the salve core */
 		for (i = DSPP_0; i < DSPP_MAX; i++) {
 			if (info[i].is_master) {
-				in_str = info[i].last_str_inroi;
-				out_str = info[i].last_str_outroi;
+				strength = info[i].last_str;
 				break;
 			}
 		}
 	} else {
-		in_str = SDE_REG_READ(&dspp->hw,
+		strength = SDE_REG_READ(&dspp->hw,
 				dspp->cap->sblk->ad.base + 0x4c);
-		out_str = SDE_REG_READ(&dspp->hw,
-				dspp->cap->sblk->ad.base + 0x50);
-		pr_debug("%s(): AD in strength %d, out %d\n", __func__,
-				in_str, out_str);
+		pr_debug("%s(): AD strength = %d\n", __func__, strength);
 	}
 
 	if (info[dspp->idx].frame_count == AD_IPC_FRAME_COUNT) {
 		info[dspp->idx].state = ad4_state_run;
 		pr_debug("%s(): AD state move to run\n", __func__);
-		info[dspp->idx].last_str_inroi = in_str;
-		info[dspp->idx].last_str_outroi = out_str;
+		info[dspp->idx].last_str = strength;
 		ret = ad4_cfg_ipc_reset(dspp, cfg);
 		if (ret)
 			return ret;
@@ -1649,7 +1462,7 @@ static int ad4_ipc_reset_setup_ipcr(struct sde_hw_dspp *dspp,
 static int ad4_cfg_ipc_reset(struct sde_hw_dspp *dspp,
 		struct sde_ad_hw_cfg *cfg)
 {
-	u32 blk_offset, val = 0;
+	u32 blk_offset;
 
 	/* revert manual strength */
 	/* tf control */
@@ -1685,35 +1498,6 @@ static int ad4_cfg_ipc_reset(struct sde_hw_dspp *dspp,
 		info[dspp->idx].cached_assertive = U8_MAX;
 	}
 
-	/*reset cached roi config*/
-	if (info[dspp->idx].cached_roi_cfg.h_start != U32_MAX) {
-		blk_offset = 0x18;
-		val = (info[dspp->idx].cached_roi_cfg.h_end & (BIT(16) - 1));
-		val |= ((info[dspp->idx].cached_roi_cfg.h_start &
-			(BIT(16) - 1)) << 16);
-		SDE_REG_WRITE(&dspp->hw,
-			dspp->cap->sblk->ad.base + blk_offset, val);
-		blk_offset += 4;
-		val = (info[dspp->idx].cached_roi_cfg.v_end & (BIT(16) - 1));
-		val |= ((info[dspp->idx].cached_roi_cfg.v_start &
-			(BIT(16) - 1)) << 16);
-		SDE_REG_WRITE(&dspp->hw,
-			dspp->cap->sblk->ad.base + blk_offset, val);
-		blk_offset = 0x40;
-		val = ((info[dspp->idx].cached_roi_cfg.f_in &
-			(BIT(16) - 1)) << 16);
-		val |= (info[dspp->idx].cached_roi_cfg.f_out & (BIT(16) - 1));
-		SDE_REG_WRITE(&dspp->hw,
-			dspp->cap->sblk->ad.base + blk_offset, val);
-
-		info[dspp->idx].last_roi_cfg = info[dspp->idx].cached_roi_cfg;
-		info[dspp->idx].cached_roi_cfg.h_start = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.h_end = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.v_start = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.v_end = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.f_in = U32_MAX;
-		info[dspp->idx].cached_roi_cfg.f_out = U32_MAX;
-	}
 	return 0;
 }
 

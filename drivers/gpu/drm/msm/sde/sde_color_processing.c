@@ -140,7 +140,6 @@ enum {
 	SDE_CP_CRTC_DSPP_AD_ASSERTIVENESS,
 	SDE_CP_CRTC_DSPP_AD_BACKLIGHT,
 	SDE_CP_CRTC_DSPP_AD_STRENGTH,
-	SDE_CP_CRTC_DSPP_AD_ROI,
 	SDE_CP_CRTC_DSPP_AD_VSYNC_COUNT,
 	SDE_CP_CRTC_DSPP_MAX,
 	/* DSPP features end */
@@ -871,15 +870,6 @@ static void sde_cp_crtc_setfeature(struct sde_cp_node *prop_node,
 			sde_cp_update_ad_vsync_prop(sde_crtc,
 					sde_crtc->ad_vsync_count);
 			break;
-		case SDE_CP_CRTC_DSPP_AD_ROI:
-			if (!hw_dspp || !hw_dspp->ops.setup_ad) {
-				ret = -EINVAL;
-				continue;
-			}
-			ad_cfg.prop = AD_ROI;
-			ad_cfg.hw_cfg = &hw_cfg;
-			hw_dspp->ops.setup_ad(hw_dspp, &ad_cfg);
-			break;
 		default:
 			ret = -EINVAL;
 			break;
@@ -1529,11 +1519,6 @@ static void dspp_ad_install_property(struct drm_crtc *crtc)
 		sde_cp_crtc_install_range_property(crtc,
 			"SDE_DSPP_AD_V4_VSYNC_COUNT",
 			SDE_CP_CRTC_DSPP_AD_VSYNC_COUNT, 0, U32_MAX, 0);
-
-		sde_cp_crtc_install_range_property(crtc, "SDE_DSPP_AD_V4_ROI",
-			SDE_CP_CRTC_DSPP_AD_ROI, 0, U64_MAX, 0);
-		sde_cp_create_local_blob(crtc, SDE_CP_CRTC_DSPP_AD_ROI,
-			sizeof(struct drm_msm_ad4_roi_cfg));
 		break;
 	default:
 		DRM_ERROR("version %d not supported\n", version);
@@ -1697,7 +1682,6 @@ static void sde_cp_update_list(struct sde_cp_node *prop_node,
 	case SDE_CP_CRTC_DSPP_AD_ASSERTIVENESS:
 	case SDE_CP_CRTC_DSPP_AD_BACKLIGHT:
 	case SDE_CP_CRTC_DSPP_AD_STRENGTH:
-	case SDE_CP_CRTC_DSPP_AD_ROI:
 		if (dirty_list)
 			list_add_tail(&prop_node->dirty_list, &crtc->ad_dirty);
 		else
@@ -1748,9 +1732,6 @@ static int sde_cp_ad_validate_prop(struct sde_cp_node *prop_node,
 			break;
 		case SDE_CP_CRTC_DSPP_AD_STRENGTH:
 			ad_prop = AD_STRENGTH;
-			break;
-		case SDE_CP_CRTC_DSPP_AD_ROI:
-			ad_prop = AD_ROI;
 			break;
 		default:
 			/* Not an AD property */
