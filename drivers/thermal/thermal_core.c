@@ -2395,6 +2395,8 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 
 	thermal_zone_device_set_polling(NULL, tz, 0);
 
+	cancel_delayed_work_sync(&tz->poll_queue);
+
 	if (tz->type[0])
 		device_remove_file(&tz->device, &dev_attr_type);
 	device_remove_file(&tz->device, &dev_attr_temp);
