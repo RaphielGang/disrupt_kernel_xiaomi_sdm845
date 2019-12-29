@@ -960,6 +960,7 @@ static void __rx_worker(struct edge_info *einfo, bool atomic_ctx)
 	}
 
 	if ((atomic_ctx) && ((einfo->tx_resume_needed) ||
+		(einfo->tx_blocked_signal_sent) ||
 		(waitqueue_active(&einfo->tx_blocked_queue)))) /* tx waiting ?*/
 		tx_wakeup_worker(einfo);
 
