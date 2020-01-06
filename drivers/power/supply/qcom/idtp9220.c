@@ -93,6 +93,9 @@ struct idtp9220_device_info {
 	bool				screen_on;
 	int				tx_charger_type;
 	int				status;
+	int				count_5v;
+	int				count_9v;
+	int				exchange;
 	int				dcin_present;
 
 	/*idt9220 charging info*/
@@ -115,6 +118,9 @@ static void idtp9220_set_charging_param(struct idtp9220_device_info *di);
 
 static int idt_signal_range = 2;
 module_param_named(signal_range, idt_signal_range, int, 0644);
+
+int dcin_curr[6];
+static bool dcin_curr_ave_init;
 
 #ifdef CONFIG_DRM
 static int wireless_fb_notifier_cb(struct notifier_block *self,
@@ -511,9 +517,13 @@ static int idtp9220_set_present(struct idtp9220_device_info *di,
 		di->dcin_present = true;
 	} else {
 		di->status = NORMAL_MODE;
+		di->count_9v = 0;
+		di->count_5v = 0;
+		di->exchange = 0;
 		di->dcin_present = false;
 		idt_signal_range = 2;
 		di->ss = 2;
+		dcin_curr_ave_init = false;
 		cancel_delayed_work(&di->chg_monitor_work);
 		di->fod_flag = false;
 		di->device_auth_success = false;
@@ -713,6 +723,7 @@ static bool need_irq_cleared(struct idtp9220_device_info *di)
 #define ADAPTER_QC_VOL		9500
 #define ADAPTER_DEFAULT_VOL	5200
 #define CHARGING_PERIOD_S	10
+#define TAPER_CURR_Limit	950000
 
 static void idtp9220_monitor_work(struct work_struct *work)
 {
@@ -785,7 +796,6 @@ static void idtp922x_set_fod_reg(struct idtp9220_device_info *di)
 			di->bus.write(di, 0x71, 0x46);
 			di->bus.write(di, 0x72, 0x7D);
 			di->bus.write(di, 0x73, 0x32);
-		}
 		} else {
 			di->bus.write(di, 0x68, 0xAE);
 			di->bus.write(di, 0x69, 0x1E);
@@ -799,8 +809,8 @@ static void idtp922x_set_fod_reg(struct idtp9220_device_info *di)
 			di->bus.write(di, 0x71, 0x70);
 			di->bus.write(di, 0x72, 0x82);
 			di->bus.write(di, 0x73, 0x32);
+		}
 	}
-
 	di->fod_flag = true;
 }
 
@@ -815,14 +825,35 @@ static void idtp9220_fod_work(struct work_struct *work)
 
 
 #define DC_FUL_CURRENT		50000
-#define SCREEN_OFF_FUL_CURRENT	100000
+#define SCREEN_OFF_FUL_CURRENT	220000
 #define DC_LOW_CURRENT		300000
 #define DC_SDP_CURRENT		500000
 #define DC_DCP_CURRENT		950000
+#define ICL_EXCHANGE_CURRENT	500000
+#define ICL_EXCHANGE_CURRENT_E5	525000
+#define ICL_EXCHANGE_COUNT	5 /*5 = 1min*/
+#define EXCHANGE_9V		0x0
+#define EXCHANGE_5V		0x1
 #define TAPER_SOC		95
 #define FULL_SOC		100
 #define TAPER_VOL		4350000
 #define TAPER_CUR		-500000
+
+static int idt9220_get_dcin_curr_average(int *dcin_curr, int dcin_now)
+{
+	unsigned int i;
+	int total = 0;
+
+	for (i = 5; i > 0; i--)
+		*(dcin_curr + i) = *(dcin_curr + i - 1);
+
+	*dcin_curr = dcin_now;
+
+	for (i = 0; i < 6; i++)
+		total += *(dcin_curr + i);
+
+	return total/6;
+}
 
 static void idtp9220_set_charging_param(struct idtp9220_device_info *di)
 {
@@ -831,6 +862,8 @@ static void idtp9220_set_charging_param(struct idtp9220_device_info *di)
 	int cur_now = 0, vol_now = 0;
 	union power_supply_propval val = {0, };
 	int input_now = 0;
+	int dcin_ave = 0;
+	int icl_exchange_current = 0;
 
 	switch (di->tx_charger_type) {
 	case ADAPTER_QC2:
@@ -838,9 +871,13 @@ static void idtp9220_set_charging_param(struct idtp9220_device_info *di)
 		icl_curr = di->qc2_icl;
 		break;
 	case ADAPTER_QC3:
+	case ADAPTER_XIAOMI_QC3:
+	case ADAPTER_XIAOMI_PD:
+	case ADAPTER_ZIMI_CAR_POWER:
+	case ADAPTER_XIAOMI_PD_40W:
 		adapter_vol = ADAPTER_QC_VOL;
 		icl_curr = di->qc3_icl;
-	break;
+		break;
 	case ADAPTER_DCP:
 	case ADAPTER_CDP:
 	case ADAPTER_PD:
@@ -856,8 +893,8 @@ static void idtp9220_set_charging_param(struct idtp9220_device_info *di)
 		break;
 	default:
 		adapter_vol = ADAPTER_DEFAULT_VOL;
-					icl_curr = DC_LOW_CURRENT;
-	break;
+		icl_curr = DC_LOW_CURRENT;
+		break;
 	}
 
 	power_supply_get_property(di->batt_psy,
@@ -884,56 +921,127 @@ static void idtp9220_set_charging_param(struct idtp9220_device_info *di)
 			POWER_SUPPLY_PROP_HEALTH, &val);
 	health = val.intval;
 
+	if (di->wireless_charging_flag) /*E5 */
+		icl_exchange_current = ICL_EXCHANGE_CURRENT_E5;
+	else
+		icl_exchange_current = ICL_EXCHANGE_CURRENT;
+
+	/*set to 5.2V 900mA*/
+	if (di->tx_charger_type == ADAPTER_QC3 || di->tx_charger_type == ADAPTER_QC2) {
+		if (input_now < icl_exchange_current && di->exchange == EXCHANGE_9V) {
+			di->count_5v++;
+			di->count_9v = 0;
+		} else if (input_now > icl_exchange_current && di->exchange == EXCHANGE_5V) {
+			di->count_9v++;
+			di->count_5v = 0;
+		} else {
+			di->count_5v = 0;
+			di->count_9v = 0;
+		}
+		/*
+		 * 9V-->5V check 6 times
+		 * 5V-->9v check 3 times
+		 */
+		if (di->count_5v > ICL_EXCHANGE_COUNT ||
+			(di->exchange == EXCHANGE_5V && di->count_9v <= ICL_EXCHANGE_COUNT - 3)) {
+			adapter_vol = ADAPTER_DEFAULT_VOL;
+			icl_curr = DC_DCP_CURRENT;
+			di->exchange = EXCHANGE_5V;
+			di->fod_flag = false;
+		} else if (di->count_9v > (ICL_EXCHANGE_COUNT - 3))
+			di->exchange = EXCHANGE_9V;
+	}
+
 	switch (di->status) {
 	case NORMAL_MODE:
-		if (soc >= TAPER_SOC && vol_now >= TAPER_VOL && cur_now > TAPER_CUR) {
-			di->status = TAPER_MODE;
-			adapter_vol = ADAPTER_DEFAULT_VOL;
-			icl_curr = min(DC_SDP_CURRENT, icl_curr);
+		if (di->wireless_charging_flag) {/* E5 */
+			if (soc >= TAPER_SOC) {
+				di->status = TAPER_MODE;
+				adapter_vol = ADAPTER_DEFAULT_VOL;
+				icl_curr = min(DC_SDP_CURRENT, icl_curr);
+			}
+		} else {
+			if (soc >= TAPER_SOC && vol_now >= TAPER_VOL && cur_now > TAPER_CUR) {
+				di->status = TAPER_MODE;
+				adapter_vol = ADAPTER_DEFAULT_VOL;
+				icl_curr = min(DC_SDP_CURRENT, icl_curr);
+			}
 		}
-	break;
+		break;
 
 	case TAPER_MODE:
 		adapter_vol = ADAPTER_DEFAULT_VOL;
 		icl_curr = min(DC_SDP_CURRENT, icl_curr);
 
-	if (batt_sts == POWER_SUPPLY_STATUS_FULL)
-		di->status = FULL_MODE;
-	else if (soc < TAPER_SOC - 1)
-		di->status = NORMAL_MODE;
+		if (dcin_curr_ave_init == false) {
+			int i = 0;
 
-	di->fod_flag = false;
+			for (i = 0; i < 6; i++)
+				dcin_curr[i] = icl_curr;
+			dcin_curr_ave_init = true;
+		}
 
-	break;
+
+		if (batt_sts == POWER_SUPPLY_STATUS_FULL) {
+			di->status = FULL_MODE;
+		} else if (soc < TAPER_SOC - 1) {
+			dcin_curr_ave_init = false;
+			di->status = NORMAL_MODE;
+		}
+
+		di->fod_flag = false;
+
+		dcin_ave = idt9220_get_dcin_curr_average(dcin_curr, input_now);
+		dcin_ave = (dcin_ave + 50000)/50000 * 50000;
+		if (dcin_ave < DC_LOW_CURRENT)
+			dcin_ave = DC_LOW_CURRENT;
+
+		if (di->wireless_charging_flag) {/* E5 */
+			idtp9220_set_vout(di, VOUT_VAL_6000_MV);
+		}
+
+		icl_curr = min(dcin_ave, icl_curr);
+		break;
 
 	case FULL_MODE:
-	if (batt_sts == POWER_SUPPLY_STATUS_CHARGING) {
-		di->status = RECHG_MODE;
+		if (batt_sts == POWER_SUPPLY_STATUS_CHARGING) {
+			di->status = RECHG_MODE;
+			adapter_vol = ADAPTER_DEFAULT_VOL;
+			icl_curr = DC_LOW_CURRENT;
+		}
+
+		di->fod_flag = false;
+
 		adapter_vol = ADAPTER_DEFAULT_VOL;
-		icl_curr = DC_LOW_CURRENT;
-	}
+		if (di->screen_on)
+			icl_curr = DC_FUL_CURRENT;
+		else
+			icl_curr = SCREEN_OFF_FUL_CURRENT;
 
-	di->fod_flag = false;
+		if (di->wireless_charging_flag) {/* E5 */
+			idtp9220_set_vout(di, VOUT_VAL_6000_MV);
+		}
 
-	adapter_vol = ADAPTER_DEFAULT_VOL;
-
-	if (di->screen_on)
-		icl_curr = DC_FUL_CURRENT;
-	else
-		icl_curr = SCREEN_OFF_FUL_CURRENT;
-	break;
+		break;
 
 	case RECHG_MODE:
-	if (soc < TAPER_SOC - 1)
-		di->status = NORMAL_MODE;
-	else if (batt_sts == POWER_SUPPLY_STATUS_FULL)
-		di->status = FULL_MODE;
+		if (soc < TAPER_SOC - 1) {
+			dcin_curr_ave_init = false;
+			di->status = NORMAL_MODE;
+		} else if (batt_sts == POWER_SUPPLY_STATUS_FULL) {
+			di->status = FULL_MODE;
+		}
 
-	di->fod_flag = false;
+		di->fod_flag = false;
 
-	adapter_vol = ADAPTER_DEFAULT_VOL;
-	icl_curr = DC_LOW_CURRENT;
-	break;
+		adapter_vol = ADAPTER_DEFAULT_VOL;
+		icl_curr = DC_LOW_CURRENT;
+
+		if (di->wireless_charging_flag) {/* E5 */
+			idtp9220_set_vout(di, VOUT_VAL_6000_MV);
+		}
+
+		break;
 
 	default:
 		break;
@@ -954,10 +1062,12 @@ static void idtp9220_set_charging_param(struct idtp9220_device_info *di)
 
 	case POWER_SUPPLY_HEALTH_OVERVOLTAGE:
 		di->fod_flag = false;
+		if (di->status == TAPER_MODE)
+			dcin_curr_ave_init = false;
 
-	adapter_vol = ADAPTER_DEFAULT_VOL;
-	icl_curr = min(SCREEN_OFF_FUL_CURRENT, icl_curr);
-	break;
+		adapter_vol = ADAPTER_DEFAULT_VOL;
+		icl_curr = min(SCREEN_OFF_FUL_CURRENT, icl_curr);
+		break;
 
 	case POWER_SUPPLY_HEALTH_COLD:
 	case POWER_SUPPLY_HEALTH_HOT:
@@ -1293,6 +1403,16 @@ static void idtp9220_sram_update_work(struct work_struct *work)
 	di->bus.write_buf(di, 0x0600, idt_firmware_sram, size);
 	di->bus.read_buf(di, 0x0600, buffer, size);
 
+	while (size--) {
+		if (idt_firmware_sram[i] == buffer[i]) {
+			printk("buffer[%d]:0x%x", i, buffer[i]);
+		} else {
+			printk("[idt] sram data is not right\n");
+			return;
+		}
+		i++;
+	}
+
 	di->bus.write(di, 0x4F, 0x5A);
 
 	di->bus.write(di, 0x4E, BIT(6));
@@ -1463,6 +1583,24 @@ static int idtp9220_remove(struct i2c_client *client)
 	return 0;
 }
 
+static void idtp9220_shutdown(struct i2c_client *client)
+{
+	struct idtp9220_device_info *di = i2c_get_clientdata(client);
+	union power_supply_propval val = {0, };
+
+	if (di->wireless_charging_flag && di->tx_charger_type != ADAPTER_NONE) {
+		idtp922x_set_adap_vol(di, ADAPTER_DEFAULT_VOL);
+		idtp922x_set_pmi_icl(di, 300000);
+		idtp9220_set_enable_mode(di, false);
+		msleep(10);
+
+		val.intval = 1;
+		power_supply_set_property(di->dc_psy, POWER_SUPPLY_PROP_INPUT_SUSPEND, &val);
+		idtp9220_set_enable_mode(di, true);
+		msleep(2000);
+	}
+}
+
 static const struct i2c_device_id idtp9220_id[] = {
 	{IDT_DRIVER_NAME, 0},
 	{},
@@ -1483,6 +1621,7 @@ static struct i2c_driver idtp9220_driver = {
 	},
 	.probe = idtp9220_probe,
 	.remove = idtp9220_remove,
+	.shutdown = idtp9220_shutdown,
 	.id_table = idtp9220_id,
 };
 
