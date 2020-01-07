@@ -400,7 +400,7 @@ static ssize_t chip_vout_store(struct device *dev,
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct idtp9220_device_info *di = i2c_get_clientdata(client);
 
-	index = (int)kstrtoul(buf, NULL, 16);
+	index = (int)simple_strtoul(buf, NULL, 16);
 	if ((index < VOUT_VAL_3500_MV) || (index > VOUT_VAL_5000_MV)) {
 		dev_err(di->dev, "Store Val %s is invalid!\n", buf);
 		return count;
@@ -433,7 +433,7 @@ static ssize_t chip_iout_store(struct device *dev,
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct idtp9220_device_info *di = i2c_get_clientdata(client);
 
-	index = (int)kstrtoul(buf, NULL, 10);
+	index = (int)simple_strtoul(buf, NULL, 10);
 
 	if ((index < CURR_VAL_100_MA) || (index > CURR_VAL_1300_MA)) {
 		dev_err(di->dev, "Store Val %s is invalid", buf);
@@ -559,7 +559,7 @@ static ssize_t chip_enable_store(struct device *dev,
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct idtp9220_device_info *di = i2c_get_clientdata(client);
 
-	ret = (int)kstrtoul(buf, NULL, 10);
+	ret = (int)simple_strtoul(buf, NULL, 10);
 	enable = !!ret;
 
 	idtp9220_set_enable_mode(di, enable);
