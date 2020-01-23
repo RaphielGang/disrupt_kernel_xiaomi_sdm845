@@ -12,6 +12,7 @@ steps:
     - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
     - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
     - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
+    - git clone --depth=1 https://github.com/RaphielGang/aarch64-raph-linux-android.git arm64cc
 
 - name: beryllium
   image: raphielscape/spinsinfra:fedora
