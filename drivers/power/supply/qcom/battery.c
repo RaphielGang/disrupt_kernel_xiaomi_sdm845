@@ -1216,7 +1216,8 @@ static int pl_disable_vote_callback(struct votable *votable,
 	}
 
 	/* notify parallel state change */
-	if (chip->pl_psy && (chip->pl_disable != pl_disable)) {
+	if (chip->pl_psy && (chip->pl_disable != pl_disable)
+				&& !chip->fcc_stepper_enable) {
 		power_supply_changed(chip->pl_psy);
 		chip->pl_disable = (bool)pl_disable;
 	}
@@ -1414,6 +1415,7 @@ static void handle_settled_icl_change(struct pl_data *chip)
 	else
 		vote(chip->pl_enable_votable_indirect, USBIN_I_VOTER, true, 0);
 
+	rerun_election(chip->fcc_votable);
 
 	if (IS_USBIN(chip->pl_mode)) {
 		/*
