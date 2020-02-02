@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1818,8 +1818,9 @@ static int msm_routing_get_audio_mixer(struct snd_kcontrol *kcontrol,
 	else
 		ucontrol->value.integer.value[0] = 0;
 
-	pr_debug("%s: shift %x rshift %x val %ld\n", __func__, mc->shift, mc->rshift,
-	ucontrol->value.integer.value[0]);
+	pr_debug("%s: shift %x rshift %x val %ld\n", __func__,
+		mc->shift, mc->rshift,
+		ucontrol->value.integer.value[0]);
 
 	return 0;
 }
@@ -1859,7 +1860,8 @@ static int msm_routing_get_listen_mixer(struct snd_kcontrol *kcontrol,
 	else
 		ucontrol->value.integer.value[0] = 0;
 
-	pr_debug("%s: shift %x rshift %x val %ld\n", __func__, mc->shift, mc->rshift,
+	pr_debug("%s: shift %x rshift %x val %ld\n", __func__,
+		mc->shift, mc->rshift,
 		ucontrol->value.integer.value[0]);
 
 	return 0;
@@ -1874,11 +1876,13 @@ static int msm_routing_put_listen_mixer(struct snd_kcontrol *kcontrol,
 		(struct soc_mixer_control *)kcontrol->private_value;
 	struct snd_soc_dapm_update *update = NULL;
 
-	pr_debug("%s: shift %x rshift %x val %ld\n", __func__, mc->shift, mc->rshift,
+	pr_debug("%s: shift %x rshift %x val %ld\n", __func__,
+		mc->shift, mc->rshift,
 		ucontrol->value.integer.value[0]);
 
 	if (ucontrol->value.integer.value[0]) {
-		if (msm_pcm_routing_route_is_set(mc->shift, mc->rshift) == false)
+		if (msm_pcm_routing_route_is_set(mc->shift, mc->rshift)
+								== false)
 			msm_pcm_routing_process_audio(mc->shift, mc->rshift, 1);
 		snd_soc_dapm_mixer_update_power(widget->dapm,
 						kcontrol, 1, update);
@@ -1976,7 +1980,8 @@ static int msm_routing_get_voice_mixer(struct snd_kcontrol *kcontrol,
 
 	mutex_unlock(&routing_lock);
 
-	pr_debug("%s: shift %x rshift %x val %ld\n", __func__, mc->shift, mc->rshift,
+	pr_debug("%s: shift %x rshift %x val %ld\n", __func__,
+			mc->shift, mc->rshift,
 			ucontrol->value.integer.value[0]);
 
 	return 0;
@@ -2019,7 +2024,8 @@ static int msm_routing_get_voice_stub_mixer(struct snd_kcontrol *kcontrol,
 
 	mutex_unlock(&routing_lock);
 
-	pr_debug("%s: shift %x rshift %x val %ld\n", __func__, mc->shift, mc->rshift,
+	pr_debug("%s: shift %x rshift %x val %ld\n", __func__,
+		mc->shift, mc->rshift,
 		ucontrol->value.integer.value[0]);
 
 	return 0;
@@ -2050,7 +2056,8 @@ static int msm_routing_put_voice_stub_mixer(struct snd_kcontrol *kcontrol,
 						update);
 	}
 
-	pr_debug("%s: shift %x rshift %x val %ld\n", __func__, mc->shift, mc->rshift,
+	pr_debug("%s: shift %x rshift %x val %ld\n", __func__,
+		mc->shift, mc->rshift,
 		ucontrol->value.integer.value[0]);
 
 	return 1;
@@ -2758,7 +2765,8 @@ static int msm_routing_get_port_mixer(struct snd_kcontrol *kcontrol,
 	else
 		ucontrol->value.integer.value[0] = 0;
 
-	pr_debug("%s: shift %x rshift %x val %ld\n", __func__, mc->shift, mc->rshift,
+	pr_debug("%s: shift %x rshift %x val %ld\n", __func__,
+	mc->shift, mc->rshift,
 	ucontrol->value.integer.value[0]);
 
 	return 0;
@@ -2790,7 +2798,7 @@ static int msm_routing_put_port_mixer(struct snd_kcontrol *kcontrol,
 		(unsigned long *)&msm_bedais[mc->shift].port_sessions[idx]);
 	} else {
 		afe_loopback(0, msm_bedais[mc->shift].port_id,
-			    msm_bedais[mc->shift].port_id);
+			    msm_bedais[mc->rshift].port_id);
 		clear_bit(shift,
 		(unsigned long *)&msm_bedais[mc->shift].port_sessions[idx]);
 	}
