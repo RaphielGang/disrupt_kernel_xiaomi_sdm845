@@ -132,6 +132,14 @@ KBUILD_AFLAGS	+=	$(call cc-option,-mcpu=cortex-a75.cortex-a55,) \
 					$(call cc-option,-mtune=cortex-a75.cortex-a55,)
 endif
 
+ifeq ($(CONFIG_NARWHAL_PROD_CN), y)
+KERNEL_CFLAGS += -DRSKP_NARWHAL_PROD
+else
+  ifeq ($(CONFIG_NARWHAL_DEVBOARD_CN), y)
+    KERNEL_CFLAGS += -DRSKP_NARWHAL_DEVBOARD
+  endif
+endif
+
 CHECKFLAGS	+= -D__aarch64__
 
 ifeq ($(CONFIG_ARM64_MODULE_CMODEL_LARGE), y)
