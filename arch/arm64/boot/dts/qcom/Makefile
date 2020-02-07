@@ -5,7 +5,7 @@ ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 		sdm845-v2-mtp-overlay.dtbo \
 		sdm845-v2.1-mtp-overlay.dtbo
 
-	dtbo-$(CONFIG_MACH_XIAOMI_D5X) += \
+	dtbo-$(CONFIG_BOARD_XIAOMI_D5X) += \
 		polaris-p0-overlay.dtbo  \
 		polaris-p0-v2-overlay.dtbo \
 		polaris-p1-overlay.dtbo  \
@@ -18,15 +18,15 @@ ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 		polaris-p3-v2-overlay.dtbo \
 		polaris-p3-v2.1-overlay.dtbo
 
-	dtbo-$(CONFIG_MACH_XIAOMI_E1N) += \
+	dtbo-$(CONFIG_BOARD_XIAOMI_E1N) += \
 		dipper-p0-v2-overlay.dtbo \
 		dipper-p0-v2.1-overlay.dtbo \
 
-	dtbo-$(CONFIG_MACH_XIAOMI_E10) += \
+	dtbo-$(CONFIG_BOARD_XIAOMI_E10) += \
 		beryllium-p0-v2-overlay.dtbo \
 		beryllium-p0-v2.1-overlay.dtbo
 
-	dtbo-$(CONFIG_MACH_XIAOMI_E5) += \
+	dtbo-$(CONFIG_BOARD_XIAOMI_E5) += \
 		perseus-p0-v2.1-overlay.dtbo \
 		perseus-p1-v2.1-overlay.dtbo \
 		perseus-p1_2-v2.1-overlay.dtbo \
@@ -81,7 +81,7 @@ dtb-y += \
 	sdm845-4k-panel-cdp.dtb \
 	sdm845-4k-panel-qrd.dtb
 
-dtb-$(CONFIG_MACH_XIAOMI_D5X) += \
+dtb-$(CONFIG_BOARD_XIAOMI_D5X) += \
 	polaris-p0.dtb \
 	polaris-p0-v2.dtb \
 	polaris-p1.dtb \
@@ -97,7 +97,7 @@ dtb-$(CONFIG_MACH_XIAOMI_D5X) += \
 	polaris-mp-v2.dtb \
 	polaris-mp-v2.1.dtb
 
-dtb-$(CONFIG_MACH_XIAOMI_E1N) += \
+dtb-$(CONFIG_BOARD_XIAOMI_E1N) += \
 	dipper-p0-v2.dtb \
 	dipper-p0-v2.1.dtb \
 	dipper-p1-v2-cn.dtb \
@@ -111,14 +111,14 @@ dtb-$(CONFIG_MACH_XIAOMI_E1N) += \
 	dipper-mp-v2.dtb \
 	dipper-mp-v2.1.dtb
 
-dtb-$(CONFIG_MACH_XIAOMI_E10) += \
+dtb-$(CONFIG_BOARD_XIAOMI_E10) += \
 	beryllium-p0-v2.dtb \
 	beryllium-p0-v2.1.dtb \
 	beryllium-p1-v2.1.dtb \
 	beryllium-p2-v2.1.dtb \
 	beryllium-mp-v2.1.dtb
 
-dtb-$(CONFIG_MACH_XIAOMI_E1S) += \
+dtb-$(CONFIG_BOARD_XIAOMI_E1S) += \
 	equuleus-p0-v2.dtb \
 	equuleus-p0-v2.1.dtb \
 	equuleus-p1-v2.dtb \
@@ -126,7 +126,7 @@ dtb-$(CONFIG_MACH_XIAOMI_E1S) += \
 	equuleus-mp-v2.dtb \
 	equuleus-mp-v2.1.dtb
 
-dtb-$(CONFIG_MACH_XIAOMI_E8) += \
+dtb-$(CONFIG_BOARD_XIAOMI_E8) += \
 	ursa-p0-v2.dtb \
 	ursa-p0-v2.1.dtb \
 	ursa-p1-v2.dtb \
@@ -136,7 +136,7 @@ dtb-$(CONFIG_MACH_XIAOMI_E8) += \
 	ursa-mp-v2.dtb \
 	ursa-mp-v2.1.dtb
 
-dtb-$(CONFIG_MACH_XIAOMI_E5) += \
+dtb-$(CONFIG_BOARD_XIAOMI_E5) += \
 	perseus-p0-v2.dtb \
 	perseus-p0-v2.1.dtb \
 	perseus-p1-v2.1.dtb \
