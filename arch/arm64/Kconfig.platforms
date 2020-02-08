@@ -165,8 +165,7 @@ config MACH_XIAOMI_SDM845
 
 config NARWHAL_PROD_CN
 	bool "Narwhal Project"
-	depends on MACH_XIAOMI
-	select MACH_XIAOMI_SDM845
+	depends on MACH_XIAOMI_SDM845
 	help
 	  This enables support for Project Narwhal Production CN. If
 	  you do not wish to build a kernel that runs on this board
