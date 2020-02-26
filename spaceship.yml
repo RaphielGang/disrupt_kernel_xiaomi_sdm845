@@ -1,0 +1,59 @@
+kind: pipeline
+name: Disrupt Kernel Droneship
+
+clone:
+  depth: 1
+
+steps:
+- name: clone_deps
+  image: raphielscape/spinsinfra:fedora
+  pull: always
+  commands:
+    - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
+    - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
+    - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
+
+- name: beryllium
+  image: raphielscape/spinsinfra:fedora
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    DEVICE: beryllium
+    DEFCONFIG: raph_beryllium_defconfig
+    CC: Clang
+    KERNELDIR: /drone/src/
+  commands:
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - rebase-sdm-10
+
+- name: dipper
+  image: raphielscape/spinsinfra:fedora
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    CC: Clang
+    DEVICE: dipper
+    DEFCONFIG: raph_dipper_defconfig
+    KERNELDIR: /drone/src/
+  commands:
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - rebase-sdm-10
+
+- name: polaris
+  image: raphielscape/spinsinfra:fedora
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    CC: Clang
+    DEVICE: polaris
+    DEFCONFIG: raph_polaris_defconfig
+    KERNELDIR: /drone/src/
+  commands:
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - rebase-sdm-10
