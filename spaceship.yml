@@ -6,7 +6,7 @@ clone:
 
 steps:
 - name: clone_deps
-  image: raphielscape/spinsinfra:fedora
+  image: raphielscape/spinsinfra:archlinux
   pull: always
   commands:
     - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
@@ -14,7 +14,7 @@ steps:
     - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
 
 - name: beryllium
-  image: raphielscape/spinsinfra:fedora
+  image: raphielscape/spinsinfra:archlinux
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
@@ -26,10 +26,10 @@ steps:
     - ./buildscripts/kernel.sh
   when:
     branch:
-      - rebase-sdm-10
+      - dist-sdm-10
 
 - name: dipper
-  image: raphielscape/spinsinfra:fedora
+  image: raphielscape/spinsinfra:archlinux
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
@@ -41,10 +41,10 @@ steps:
     - ./buildscripts/kernel.sh
   when:
     branch:
-      - rebase-sdm-10
+      - dist-sdm-10
 
 - name: polaris
-  image: raphielscape/spinsinfra:fedora
+  image: raphielscape/spinsinfra:archlinux
   environment:
     BOT_API_KEY:
       from_secret: BOT_API_KEY
@@ -56,4 +56,4 @@ steps:
     - ./buildscripts/kernel.sh
   when:
     branch:
-      - rebase-sdm-10
+      - dist-sdm-10
