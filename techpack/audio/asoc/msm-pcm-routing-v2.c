@@ -83,6 +83,8 @@ static uint32_t voc_session_id = ALL_SESSION_VSID;
 static int msm_route_ext_ec_ref;
 static int voice_ext_ec_ref;
 static int voip_ext_ec_ref;
+static int wakeup_ext_ec_ref = 0;
+static int voip_ext_ec_common_ref = 0;
 static bool is_custom_stereo_on;
 static bool is_ds2_on;
 static bool swap_ch;
@@ -3585,9 +3587,16 @@ static const struct snd_kcontrol_new ec_ref_param_controls[] = {
 static int msm_routing_ec_ref_rx_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
+	struct snd_soc_dapm_widget_list *wlist =
+						dapm_kcontrol_get_wlist(kcontrol);
+	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
+
 	pr_debug("%s: ec_ref_rx  = %d", __func__, msm_route_ec_ref_rx);
 	mutex_lock(&routing_lock);
-	ucontrol->value.integer.value[0] = msm_route_ec_ref_rx;
+	if (!strncmp(widget->name, "AUDIO_REF_EC_UL10 MUX", strlen("AUDIO_REF_EC_UL10 MUX")))
+		ucontrol->value.integer.value[0] = voip_ext_ec_common_ref;
+	else
+		ucontrol->value.integer.value[0] = wakeup_ext_ec_ref;
 	mutex_unlock(&routing_lock);
 	return 0;
 }
@@ -3600,13 +3609,14 @@ static int msm_routing_ec_ref_rx_put(struct snd_kcontrol *kcontrol,
 		snd_soc_dapm_kcontrol_widget(kcontrol);
 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	struct snd_soc_dapm_update *update = NULL;
-
+	bool state = true;
 
 	mutex_lock(&routing_lock);
 	switch (ucontrol->value.integer.value[0]) {
 	case 0:
 		msm_route_ec_ref_rx = 0;
 		ec_ref_port_id = AFE_PORT_INVALID;
+		state = false;
 		break;
 	case 1:
 		msm_route_ec_ref_rx = 1;
@@ -3701,14 +3711,27 @@ static int msm_routing_ec_ref_rx_put(struct snd_kcontrol *kcontrol,
 		pr_err("%s EC ref rx %ld not valid\n",
 			__func__, ucontrol->value.integer.value[0]);
 		ec_ref_port_id = AFE_PORT_INVALID;
+		state = false;
 		break;
 	}
-	adm_ec_ref_rx_id(ec_ref_port_id);
+
 	pr_debug("%s: msm_route_ec_ref_rx = %d\n",
 	    __func__, msm_route_ec_ref_rx);
+
+	if (!strncmp(widget->name, "AUDIO_REF_EC_UL10 MUX", strlen("AUDIO_REF_EC_UL10 MUX")))
+	    voip_ext_ec_common_ref = msm_route_ec_ref_rx;
+	else
+	    wakeup_ext_ec_ref = msm_route_ec_ref_rx;
+
+	if (state || (!state && wakeup_ext_ec_ref == 0 && voip_ext_ec_common_ref == 0)) {
+	   pr_info("%s: update state!\n", __func__);
+	adm_ec_ref_rx_id(ec_ref_port_id);
 	mutex_unlock(&routing_lock);
 	snd_soc_dapm_mux_update_power(widget->dapm, kcontrol,
 					msm_route_ec_ref_rx, e, update);
+	} else {
+	    mutex_unlock(&routing_lock);
+	}
 	return 0;
 }
 
