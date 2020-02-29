@@ -33,6 +33,14 @@ enum print_reason {
 	PR_OEM		= BIT(5),
 };
 
+enum hvdcp3_type {
+	HVDCP3_NONE = 0,
+	HVDCP3_CLASSA_18W,
+	HVDCP3_CLASSB_27W,
+	USB_PD,
+	HVDCP2_TYPE,
+};
+
 #define DEFAULT_VOTER			"DEFAULT_VOTER"
 #define USER_VOTER			"USER_VOTER"
 #define PD_VOTER			"PD_VOTER"
@@ -62,6 +70,7 @@ enum print_reason {
 #define PL_DELAY_VOTER			"PL_DELAY_VOTER"
 #define CTM_VOTER			"CTM_VOTER"
 #define SW_QC3_VOTER			"SW_QC3_VOTER"
+#define JEITA_VOTER			"JEITA_VOTER"
 #define AICL_RERUN_VOTER		"AICL_RERUN_VOTER"
 #define LEGACY_UNKNOWN_VOTER		"LEGACY_UNKNOWN_VOTER"
 #define CC2_WA_VOTER			"CC2_WA_VOTER"
@@ -357,6 +366,7 @@ struct smb_charger {
 	struct delayed_work	cc_float_charge_work;
 	struct delayed_work	typec_reenable_work;
 	struct delayed_work     charger_type_recheck;
+	struct delayed_work     connector_health_work;
 	struct delayed_work	dc_input_current_work;
 	struct delayed_work	check_vbus_work;
 
@@ -387,6 +397,7 @@ struct smb_charger {
 	int			fake_batt_status;
 	bool			step_chg_enabled;
 	bool			sw_jeita_enabled;
+	bool			dynamic_fv_enabled;
 	bool			wireless_charging_flag;
 	bool			wireless_support;
 	bool			is_hdc;
@@ -396,6 +407,8 @@ struct smb_charger {
 	bool			vconn_en;
 	bool			suspend_input_on_debug_batt;
 	bool			legacy;
+	bool			pd_verifed;
+	bool			is_qc_class_b;
 	int			otg_attempts;
 	int			vconn_attempts;
 	int			default_icl_ua;
@@ -457,6 +470,19 @@ struct smb_charger {
 	int                     recheck_charger;
 	int                     precheck_charger_type;
 
+};
+
+enum quick_charge_type {
+	QUICK_CHARGE_NORMAL = 0,
+	QUICK_CHARGE_FAST,
+	QUICK_CHARGE_FLASH,
+	QUICK_CHARGE_TURBE,
+	QUICK_CHARGE_MAX,
+};
+
+struct quick_charge {
+	enum power_supply_type adap_type;
+	enum quick_charge_type adap_cap;
 };
 
 int smblib_read(struct smb_charger *chg, u16 addr, u8 *val);
@@ -619,6 +645,7 @@ int smblib_set_prop_type_recheck(struct smb_charger *chg,
 int smblib_get_prop_type_recheck(struct smb_charger *chg,
 				 union power_supply_propval *val);
 void smblib_suspend_on_debug_battery(struct smb_charger *chg);
+void smblib_usb_typec_change(struct smb_charger *chg);
 int smblib_rerun_apsd_if_required(struct smb_charger *chg);
 int smblib_get_prop_fcc_delta(struct smb_charger *chg,
 				union power_supply_propval *val);
@@ -637,7 +664,7 @@ int smblib_get_prop_from_bms(struct smb_charger *chg,
 int smblib_set_prop_pr_swap_in_progress(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_stat_sw_override_cfg(struct smb_charger *chg, bool override);
-void smblib_usb_typec_change(struct smb_charger *chg);
+int smblib_get_quick_charge_type(struct smb_charger *chg);
 int smblib_set_prop_rerun_apsd(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_toggle_stat(struct smb_charger *chg, int reset);
