@@ -36,12 +36,6 @@
 #include "wcd-mbhc-v2-api.h"
 #include <soc/qcom/socinfo.h>
 
-#define SUBPCB_ID_NONE 0
-#define SUBPCB_ID_OLD 1
-#define SUBPCB_ID_NEW 2
-
-int subpcb_id_state;
-
 void wcd_mbhc_jack_report(struct wcd_mbhc *mbhc,
 			  struct snd_soc_jack *jack, int status, int mask)
 {
@@ -1513,7 +1507,7 @@ static int wcd_mbhc_usb_c_analog_setup_gpios(struct wcd_mbhc *mbhc,
 #endif
 
 		/* using hardware auto switch gnd and mic if support */
-		if (config->euro_us_hw_switch_gpio_p && (subpcb_id_state == SUBPCB_ID_OLD)) {
+		if (config->euro_us_hw_switch_gpio_p) {
 			msm_cdc_pinctrl_select_active_state(config->euro_us_hw_switch_gpio_p);
 			msleep(200);
 			pr_info("hardware auto switch enable\n");
@@ -1535,7 +1529,7 @@ static int wcd_mbhc_usb_c_analog_setup_gpios(struct wcd_mbhc *mbhc,
 			msm_cdc_pinctrl_select_sleep_state(
 				config->usbc_force_gpio_p);
 
-		if (config->euro_us_hw_switch_gpio_p && (subpcb_id_state == SUBPCB_ID_OLD)) {
+		if (config->euro_us_hw_switch_gpio_p) {
 			msm_cdc_pinctrl_select_sleep_state(config->euro_us_hw_switch_gpio_p);
 			pr_info("hardware auto switch disable\n");
 		}
@@ -1809,11 +1803,6 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 			subpcb_id = gpio_get_value_cansleep(config->subpcb_id_gpio);
 			pr_info("subpcb_id_gpio = %d, value1 = %d\n",
 					config->subpcb_id_gpio, subpcb_id);
-
-			if (subpcb_id == 0)
-				subpcb_id_state = SUBPCB_ID_NEW;
-			else
-				subpcb_id_state = SUBPCB_ID_OLD;
 
 			msm_cdc_pinctrl_select_active_state(
 					config->subpcb_id_gpio_p);
