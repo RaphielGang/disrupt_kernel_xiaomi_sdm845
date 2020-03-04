@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
- * Copyright (C) 2018 XiaoMi, Inc.
+ * Copyright (C) 2019 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -353,6 +353,11 @@ struct dsi_panel *dsi_panel_ext_bridge_get(struct device *parent,
 
 int dsi_panel_parse_esd_reg_read_configs(struct dsi_panel *panel,
 				struct device_node *of_node);
+
+int dsi_display_read_panel(struct dsi_panel *panel,
+				struct dsi_read_config *read_config);
+
+int panel_disp_param_send_lock(struct dsi_panel *panel, int param);
 
 void dsi_panel_ext_bridge_put(struct dsi_panel *panel);
 
