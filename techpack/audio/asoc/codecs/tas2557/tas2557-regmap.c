@@ -22,7 +22,6 @@
 
 #ifdef CONFIG_TAS2557_REGMAP
 
-#define DEBUG
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -68,7 +67,7 @@ static int tas2557_change_book_page(
 {
 	int nResult = 0;
 
-	if ((pTAS2557->mnCurrentBook == nBook) 
+	if ((pTAS2557->mnCurrentBook == nBook)
 		&& pTAS2557->mnCurrentPage == nPage)
 		goto end;
 
@@ -136,7 +135,7 @@ static int tas2557_dev_read(
 				TAS2557_PAGE_REG(nRegister));
 	}
 
-	nResult = tas2557_change_book_page(pTAS2557, 
+	nResult = tas2557_change_book_page(pTAS2557,
 				TAS2557_BOOK_ID(nRegister),
 				TAS2557_PAGE_ID(nRegister));
 	if (nResult >= 0) {
