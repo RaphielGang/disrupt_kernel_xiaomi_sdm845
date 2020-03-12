@@ -16,7 +16,7 @@
  *
  */
 
-
+#include <asm/uaccess.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 
@@ -38,6 +38,7 @@
 #define HANDSHAKING_HOST_READY 0xBB
 
 #define XDATA_SECTOR_SIZE   256
+#define NVT_POCKET_PALM_SWITCH "nvt_pocket_palm_switch"
 
 static uint8_t xdata_tmp[2048] = {0};
 static int32_t xdata[2048] = {0};
@@ -61,6 +62,9 @@ static uint8_t hw_version;
 static uint16_t project_id;
 static uint8_t cg_maker;
 static uint8_t reservation_byte;
+
+/* Xiaomi Touch Feature Info */
+static struct proc_dir_entry *NVT_proc_pocket_palm_switch_entry;
 
 /*******************************************************
 Description:
@@ -813,6 +817,189 @@ end:
 	return ret;
 }
 
+int32_t nvt_set_pocket_palm_switch(uint8_t pocket_palm_switch)
+{
+	uint8_t buf[4] = {0};
+	int32_t ret = 0;
+
+	NVT_LOG("++\n");
+	NVT_LOG("set pocket palm switch: %d\n", pocket_palm_switch);
+
+	msleep(35);
+
+	/* ---set xdata index to EVENT BUF ADDR--- */
+	ret = nvt_set_page(I2C_FW_Address, ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_HOST_CMD);
+
+	if (ret < 0) {
+		NVT_ERR("Set event buffer index fail!\n");
+		goto nvt_set_pocket_palm_switch_out;
+	}
+
+	buf[0] = EVENT_MAP_HOST_CMD;
+	if (pocket_palm_switch == 0) {
+		/* pocket palm disable */
+		buf[1] = 0x74;
+	} else if (pocket_palm_switch == 1) {
+		/* pocket palm enable */
+		buf[1] = 0x73;
+	} else {
+		NVT_ERR("Invalid value! pocket_palm_switch = %d\n", pocket_palm_switch);
+		ret = -EINVAL;
+		goto nvt_set_pocket_palm_switch_out;
+	}
+	
+	ret = CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 2);
+	if (ret < 0) {
+		NVT_ERR("Write pocket palm switch command fail!\n");
+		goto nvt_set_pocket_palm_switch_out;
+	}
+
+nvt_set_pocket_palm_switch_out:
+	NVT_LOG("--\n");
+	return ret;
+}
+
+int32_t nvt_get_pocket_palm_switch(uint8_t *pocket_palm_switch)
+{
+	uint8_t buf[4] = {0};
+	int32_t ret = 0;
+
+	NVT_LOG("++\n");
+
+	msleep(35);
+
+	/* ---set xdata index to EVENT BUF ADDR--- */
+	ret = nvt_set_page(I2C_FW_Address, ts->mmap->EVENT_BUF_ADDR | 0x5D);
+
+	if (ret < 0) {
+		NVT_ERR("Set event buffer index fail!\n");
+		goto nvt_get_pocket_palm_switch_out;
+	}
+
+	buf[0] = 0x5D;
+	buf[1] = 0x00;
+	ret = CTP_I2C_READ(ts->client, I2C_FW_Address, buf, 2);
+	if (ret < 0) {
+		NVT_ERR("Read pocket palm switch status fail!\n");
+		goto nvt_get_pocket_palm_switch_out;
+	}
+
+	*pocket_palm_switch = ((buf[1] >> 6) & 0x01);
+	NVT_LOG("pocket_palm_switch = %d\n", *pocket_palm_switch);
+
+nvt_get_pocket_palm_switch_out:
+	NVT_LOG("--\n");
+	return ret;
+}
+
+
+static ssize_t nvt_pocket_palm_switch_proc_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	static int finished;
+	int32_t cnt = 0;
+	int32_t len = 0;
+	uint8_t pocket_palm_switch;
+	char tbuf[128] = {0};
+	int32_t ret;
+
+	NVT_LOG("++\n");
+
+	/*
+	* We return 0 to indicate end of file, that we have
+	* no more information. Otherwise, processes will
+	* continue to read from us in an endless loop.
+	*/
+	if (finished) {
+		NVT_LOG("read END\n");
+		finished = 0;
+		return 0;
+	}
+	finished = 1;
+
+	if (mutex_lock_interruptible(&ts->lock)) {
+		return -ERESTARTSYS;
+	}
+
+#if NVT_TOUCH_ESD_PROTECT
+	nvt_esd_check_enable(false);
+#endif /* #if NVT_TOUCH_ESD_PROTECT */
+
+	nvt_get_pocket_palm_switch(&pocket_palm_switch);
+
+	mutex_unlock(&ts->lock);
+
+	cnt = snprintf(tbuf, PAGE_SIZE - len, "pocket_palm_switch: %d\n", pocket_palm_switch);
+	ret = copy_to_user(buf, tbuf, cnt);
+	if (ret < 0)
+		return ret;
+
+	*f_pos += cnt;
+
+	NVT_LOG("--\n");
+	return cnt;
+}
+
+static ssize_t nvt_pocket_palm_switch_proc_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
+{
+	int32_t ret;
+	char tmp[6];
+	int32_t onoff;
+	uint8_t pocket_palm_switch;
+
+	NVT_LOG("++\n");
+
+	if (count > sizeof(tmp)) {
+		ret = -EFAULT;
+		goto out;
+	}
+	if (copy_from_user(tmp, buf, count)) {
+		ret = -EFAULT;
+		goto out;
+	}
+	if (count == 0 || count > 2) {
+		NVT_ERR("Invalid value!, count = %zu\n", count);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = sscanf(tmp, "%d", &onoff);
+	if (ret != 1) {
+		NVT_ERR("Invalid value!, ret = %d\n", ret);
+		ret = -EINVAL;
+		goto out;
+	}
+	if ((onoff < 0) || (onoff > 1)) {
+		NVT_ERR("Invalid value!, onoff = %d\n", onoff);
+		ret = -EINVAL;
+		goto out;
+	}
+	pocket_palm_switch = (uint8_t)onoff;
+	NVT_LOG("pocket_palm_switch = %d\n", pocket_palm_switch);
+
+	if (mutex_lock_interruptible(&ts->lock)) {
+		return -ERESTARTSYS;
+	}
+
+#if NVT_TOUCH_ESD_PROTECT
+	nvt_esd_check_enable(false);
+#endif /* #if NVT_TOUCH_ESD_PROTECT */
+
+	nvt_set_pocket_palm_switch(pocket_palm_switch);
+
+	mutex_unlock(&ts->lock);
+
+	ret = count;
+out:
+	NVT_LOG("--\n");
+	return ret;
+}
+
+static const struct file_operations nvt_pocket_palm_switch_fops = {
+	.owner = THIS_MODULE,
+	.read = nvt_pocket_palm_switch_proc_read,
+	.write = nvt_pocket_palm_switch_proc_write,
+};
+
 /*******************************************************
 Description:
 	Novatek touchscreen extra function proc. file node
@@ -870,6 +1057,14 @@ int32_t nvt_extra_proc_init(void)
 	} else {
 		NVT_LOG("create proc/%s Succeeded!\n", MI_LOCKDOWN);
 	}
+	
+	NVT_proc_pocket_palm_switch_entry = proc_create(NVT_POCKET_PALM_SWITCH, 0444, NULL, &nvt_pocket_palm_switch_fops);
+	if (NVT_proc_pocket_palm_switch_entry == NULL) {
+		NVT_ERR("create proc/%s Failed!\n", NVT_POCKET_PALM_SWITCH);
+		return -ENOMEM;
+	} else {
+		NVT_LOG("create proc/%s Succeeded!\n", NVT_POCKET_PALM_SWITCH);
+	}
 
 	return 0;
 }
@@ -918,6 +1113,12 @@ void nvt_extra_proc_deinit(void)
 		remove_proc_entry(MI_LOCKDOWN, NULL);
 		NVT_proc_diff_entry = NULL;
 		NVT_LOG("Removed /proc/%s\n", MI_LOCKDOWN);
+	}
+	
+	if (NVT_proc_pocket_palm_switch_entry != NULL) {
+		remove_proc_entry(NVT_POCKET_PALM_SWITCH, NULL);
+		NVT_proc_pocket_palm_switch_entry = NULL;
+		NVT_LOG("Removed /proc/%s\n", NVT_POCKET_PALM_SWITCH);
 	}
 }
 #endif
