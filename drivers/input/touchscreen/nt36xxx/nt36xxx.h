@@ -156,6 +156,8 @@ struct nvt_ts_data {
 	int gesture_enabled;
 #endif
 	int current_index;
+	bool palm_sensor_changed;
+	bool palm_sensor_switch;
 };
 
 #if WAKEUP_GESTURE
@@ -210,5 +212,7 @@ extern void nvt_stop_crc_reboot(void);
 extern int32_t Init_BootLoader(void);
 extern int32_t Resume_PD(void);
 extern int32_t nvt_get_lockdown_info(char *lockdata);
+
+int32_t nvt_set_pocket_palm_switch(uint8_t pocket_palm_switch);
 
 #endif /* _LINUX_NVT_TOUCH_H */
