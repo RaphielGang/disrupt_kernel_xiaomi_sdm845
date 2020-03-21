@@ -1206,6 +1206,9 @@ ifdef CONFIG_LTO_CLANG
     endif
   endif
 endif
+ifneq ($(ld-name),lld)
+	@echo LD is $(ld-name) >&2 && exit 1
+endif
 # Make sure compiler supports LTO flags
 ifdef lto-flags
   ifeq ($(call cc-option, $(lto-flags)),)
