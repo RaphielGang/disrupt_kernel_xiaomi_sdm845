@@ -126,14 +126,6 @@ KBUILD_CFLAGS	+=	$(call cc-option,-mcpu=cortex-a55,) \
 KBUILD_AFLAGS	+=	$(call cc-option,-mcpu=cortex-a55,) \
 					$(call cc-option,-march=armv8.2-a,) \
 					$(call cc-option,-mtune=cortex-a55,)
-else
-KBUILD_CFLAGS	+=	$(call cc-option,-mcpu=cortex-a75.cortex-a55,) \
-					$(call cc-option,-march=armv8.2-a,) \
-					$(call cc-option,-mtune=cortex-a75.cortex-a55,)
-
-KBUILD_AFLAGS	+=	$(call cc-option,-mcpu=cortex-a75.cortex-a55,) \
-					$(call cc-option,-march=armv8.2-a,) \
-					$(call cc-option,-mtune=cortex-a75.cortex-a55,)
 endif
 
 CHECKFLAGS	+= -D__aarch64__
