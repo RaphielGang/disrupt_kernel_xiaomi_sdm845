@@ -1,0 +1,62 @@
+kind: pipeline
+name: Disrupt Kernel Droneship
+
+clone:
+  depth: 1
+
+steps:
+- name: clone_deps
+  image: raphielscape/spinsinfra:debian
+  pull: always
+  commands:
+    - git clone --depth=1 --recursive https://github.com/raphielscape/scripts buildscripts
+    - git clone --depth=1 https://github.com/raphielscape/AnyKernel2.git --branch "sdm845" anykernel
+    - git clone --depth=1 https://github.com/RaphielGang/arm-linux-gnueabi-8.x.git armcc
+
+- name: beryllium
+  image: raphielscape/spinsinfra:debian
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    DEVICE: beryllium
+    DEFCONFIG: raph_beryllium_defconfig
+    COMPILER: Clang
+    TERM: xterm-256color
+    KERNELDIR: /drone/src/
+  commands:
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - dist-sdx-10
+
+- name: dipper
+  image: raphielscape/spinsinfra:debian
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    COMPILER: Clang
+    DEVICE: dipper
+    DEFCONFIG: raph_dipper_defconfig
+    TERM: xterm-256color
+    KERNELDIR: /drone/src/
+  commands:
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - dist-sdx-10
+
+- name: polaris
+  image: raphielscape/spinsinfra:debian
+  environment:
+    BOT_API_KEY:
+      from_secret: BOT_API_KEY
+    COMPILER: Clang
+    DEVICE: polaris
+    DEFCONFIG: raph_polaris_defconfig
+    TERM: xterm-256color
+    KERNELDIR: /drone/src/
+  commands:
+    - ./buildscripts/kernel.sh
+  when:
+    branch:
+      - dist-sdx-10
