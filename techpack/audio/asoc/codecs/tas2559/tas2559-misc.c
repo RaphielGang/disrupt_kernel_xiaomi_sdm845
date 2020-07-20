@@ -551,69 +551,10 @@ err:
 	return count;
 }
 
-static long tas2559_file_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	struct tas2559_priv *pTAS2559 = file->private_data;
-	int ret = 0;
-
-	mutex_lock(&pTAS2559->file_lock);
-
-	switch (cmd) {
-	case SMARTPA_SPK_DAC_VOLUME: {
-	}
-	break;
-
-	case SMARTPA_SPK_POWER_ON: {
-		tas2559_enable(pTAS2559, true);
-	}
-	break;
-
-	case SMARTPA_SPK_POWER_OFF: {
-		tas2559_enable(pTAS2559, false);
-	}
-	break;
-
-	case SMARTPA_SPK_SWITCH_PROGRAM: {
-		if ((pTAS2559->mpFirmware->mnConfigurations > 0)
-		    && (pTAS2559->mpFirmware->mnPrograms > 0))
-			tas2559_set_program(pTAS2559, arg, -1);
-	}
-	break;
-
-	case SMARTPA_SPK_SWITCH_CONFIGURATION: {
-		if ((pTAS2559->mpFirmware->mnConfigurations > 0)
-		    && (pTAS2559->mpFirmware->mnPrograms > 0))
-			tas2559_set_config(pTAS2559, arg);
-	}
-	break;
-
-	case SMARTPA_SPK_SWITCH_CALIBRATION: {
-		if ((pTAS2559->mpFirmware->mnConfigurations > 0)
-		    && (pTAS2559->mpFirmware->mnPrograms > 0))
-			tas2559_set_calibration(pTAS2559, arg);
-	}
-	break;
-
-	case SMARTPA_SPK_SET_SAMPLERATE: {
-		tas2559_set_sampling_rate(pTAS2559, arg);
-	}
-	break;
-
-	case SMARTPA_SPK_SET_BITRATE: {
-		tas2559_set_bit_rate(pTAS2559, arg);
-	}
-	break;
-	}
-
-	mutex_unlock(&pTAS2559->file_lock);
-	return ret;
-}
-
 static const struct file_operations fops = {
 	.owner = THIS_MODULE,
 	.read = tas2559_file_read,
 	.write = tas2559_file_write,
-	.unlocked_ioctl = tas2559_file_unlocked_ioctl,
 	.open = tas2559_file_open,
 	.release = tas2559_file_release,
 };
