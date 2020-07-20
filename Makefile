@@ -338,7 +338,7 @@ include scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 # LLVM Version need to be defined for Debian
-AS		= $(LLVM)as$(LLVM_VERSION)
+AS		= $(CROSS_COMPILE)as
 LD		= ld.lld$(LLVM_VERSION)
 CC		= clang$(LLVM_VERSION)
 LDGOLD		= $(CROSS_COMPILE)ld.gold
