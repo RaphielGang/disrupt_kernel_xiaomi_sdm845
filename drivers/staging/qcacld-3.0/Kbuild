@@ -192,6 +192,9 @@ ifeq ($(KERNEL_BUILD), 0)
 	CONFIG_WLAN_FEATURE_DSRC := y
 	endif
 
+#Flag to enable SAE
+CONFIG_WLAN_FEATURE_SAE := y
+
 ifneq ($(CONFIG_ROME_IF),sdio)
 	#Flag to enable DISA
 	CONFIG_WLAN_FEATURE_DISA := y
@@ -201,9 +204,6 @@ ifneq ($(CONFIG_ROME_IF),sdio)
 
 	#Flag to enable GMAC
 	CONFIG_WLAN_FEATURE_GMAC := y
-
-	#Flag to enable SAE
-	CONFIG_WLAN_FEATURE_SAE := y
 
 	#Flag to enable Fast Path feature
 	CONFIG_WLAN_FASTPATH := y
