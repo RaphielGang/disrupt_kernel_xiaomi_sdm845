@@ -439,6 +439,10 @@ static int ep_pcie_clk_init(struct ep_pcie_dev_t *dev)
 		dev->gdsc_disabled = true;
 	}
 
+	dev->clk_ref_count++;
+	EP_PCIE_DBG(dev, "PCIe V%d, Clock ref count %d\n",
+		dev->rev, dev->clk_ref_count);
+
 	return rc;
 }
 
@@ -450,7 +454,10 @@ static void ep_pcie_clk_deinit(struct ep_pcie_dev_t *dev)
 	EP_PCIE_DBG(dev, "PCIe V%d, Clock ref count %d\n",
 		dev->rev, dev->clk_ref_count);
 
-	if (!dev->in_d3hot_sleep) {
+	if (dev->clk_ref_count != 1)
+		dump_stack();
+
+	if (dev->clk_ref_count) {
 		for (i = EP_PCIE_MAX_CLK - 1; i >= 0; i--)
 		if (dev->clk[i].hdl)
 			clk_disable_unprepare(dev->clk[i].hdl);
@@ -467,10 +474,7 @@ static void ep_pcie_clk_deinit(struct ep_pcie_dev_t *dev)
 				"PCIe V%d: relinquish bus bandwidth.\n",
 				dev->rev);
 		}
-	} else {
-		EP_PCIE_DBG(dev,
-			"PCIe V%d, In d3hot sleep, clks already disabled\n",
-			dev->rev);
+		dev->clk_ref_count--;
 	}
 
 	if (!dev->perst_deast) {
@@ -548,7 +552,7 @@ static void ep_pcie_pipe_clk_deinit(struct ep_pcie_dev_t *dev)
 	EP_PCIE_DBG(dev, "PCIe V%d, Clock ref count %d\n",
 		dev->rev, dev->clk_ref_count);
 
-	if (!dev->in_d3hot_sleep) {
+	if (dev->clk_ref_count) {
 
 		if (dev->clk_ref_count != 1)
 			dump_stack();
@@ -557,8 +561,6 @@ static void ep_pcie_pipe_clk_deinit(struct ep_pcie_dev_t *dev)
 		if (dev->pipeclk[i].hdl)
 			clk_disable_unprepare(
 			dev->pipeclk[i].hdl);
-
-		dev->clk_ref_count--;
 	} else {
 		EP_PCIE_DBG(dev,
 			"PCIe V%d, In d3hot sleep, pipe_clk already disabled\n",
@@ -670,14 +672,15 @@ static void ep_pcie_core_init(struct ep_pcie_dev_t *dev, bool configured)
 		ep_pcie_write_mask(dev->dm_core +
 				PCIE20_LINK_CONTROL2_LINK_STATUS2,
 				0xf, dev->curr_link_speed);
+
+		EP_PCIE_DBG2(dev, "PCIe V%d: Allow L1 after D3_COLD->D0\n",
+				dev->rev);
+		ep_pcie_write_mask(dev->parf + PCIE20_PARF_PM_CTRL, BIT(5), 0);
 	}
 
 	if (dev->active_config) {
 		struct resource *dbi = dev->res[EP_PCIE_RES_DM_CORE].resource;
 		u32 dbi_lo = dbi->start;
-
-		EP_PCIE_DBG2(dev, "PCIe V%d: Enable L1.\n", dev->rev);
-		ep_pcie_write_mask(dev->parf + PCIE20_PARF_PM_CTRL, BIT(5), 0);
 
 		ep_pcie_write_reg(dev->parf + PCIE20_PARF_SLV_ADDR_MSB_CTRL,
 					0, BIT(0));
@@ -855,11 +858,9 @@ static void ep_pcie_core_init(struct ep_pcie_dev_t *dev, bool configured)
 			readl_relaxed(dev->parf + PCIE20_PARF_INT_ALL_MASK));
 	}
 
-	if (dev->active_config) {
-		ep_pcie_write_reg(dev->dm_core, PCIE20_AUX_CLK_FREQ_REG, 0x14);
-		EP_PCIE_DBG2(dev, "PCIe V%d: Enable L1.\n", dev->rev);
-		ep_pcie_write_mask(dev->parf + PCIE20_PARF_PM_CTRL, BIT(5), 0);
-	}
+	if (dev->active_config)
+		ep_pcie_write_reg(dev->dm_core, PCIE20_AUX_CLK_FREQ_REG,
+				0x14);
 
 	if (!configured)
 		ep_pcie_config_mmio(dev);
@@ -1401,14 +1402,18 @@ static int ep_pcie_core_clkreq_override(bool config)
 
 	if (config) {
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL, BIT(3));
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_DEASSERT);
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE, BIT(1));
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_EN);
 	} else {
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE, 0);
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_ENABLE_DIS);
 		ep_pcie_write_reg_field(dev->parf, PCIE20_PARF_CLKREQ_OVERRIDE,
-			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL, 0);
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_MASK,
+			PCIE20_PARF_CLKREQ_IN_OVERRIDE_VAL_ASSERT);
 	}
 
 	return 0;
@@ -1767,6 +1772,15 @@ int ep_pcie_core_enable_endpoint(enum ep_pcie_options opt)
 				ep_pcie_core_init(dev, true);
 				dev->link_status = EP_PCIE_LINK_UP;
 				dev->l23_ready = false;
+
+				/* enable pipe clock for early link init case*/
+				ret = ep_pcie_pipe_clk_init(dev);
+				if (ret) {
+					EP_PCIE_ERR(dev,
+					"PCIe V%d: failed to enable pipe clock\n",
+					dev->rev);
+					goto pipe_clk_fail;
+				}
 				goto checkbme;
 			} else {
 				ltssm_en = readl_relaxed(dev->parf
@@ -1965,7 +1979,17 @@ checkbme:
 	EP_PCIE_DBG(dev, "PCIe V%d: PCIE20_CAP_LINKCTRLSTATUS: 0x%x\n",
 		dev->rev,
 		readl_relaxed(dev->dm_core + PCIE20_CAP_LINKCTRLSTATUS));
-
+	/*
+	 * Hold a wakelock since the mhi wakelock will be released while
+	 * processing M3, and we might miss the L1ss inactivity timer
+	 * interrupt  (used for D3hot sleep feature) if apps goes into suspend.
+	 */
+	if (!atomic_read(&dev->ep_pcie_dev_wake)) {
+		pm_stay_awake(&dev->pdev->dev);
+		atomic_set(&dev->ep_pcie_dev_wake, 1);
+		EP_PCIE_DBG(dev, "PCIe V%d: Acquired wakelock\n",
+			dev->rev);
+	}
 	dev->suspending = false;
 	goto out;
 
@@ -2287,17 +2311,6 @@ static irqreturn_t ep_pcie_handle_dstate_change_irq(int irq, void *data)
 				"PCIe V%d: do not notify client about this D3 hot event since enumeration by HLOS is not done yet.\n",
 				dev->rev);
 		ep_pcie_core_log_l1_debug_regs(dev);
-		/*
-		 * Hold a wakelock since the mhi wakelock will be released while
-		 * processing M3, and we might miss the L1ss inactivity timer
-		 * interrupt if apps goes into suspend.
-		 */
-		if (!atomic_read(&dev->ep_pcie_dev_wake)) {
-			pm_stay_awake(&dev->pdev->dev);
-			atomic_set(&dev->ep_pcie_dev_wake, 1);
-			EP_PCIE_DBG(dev, "PCIe V%d: Acquired wakelock\n",
-				dev->rev);
-		}
 		queue_work(dev->d3hot_sleep_wq, &dev->sched_inact_timer);
 	} else if (dstate == 0) {
 		dev->l23_ready = false;
