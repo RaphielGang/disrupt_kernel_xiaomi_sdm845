@@ -513,6 +513,19 @@
 	};
 };
 
+&qupv3_se11_spi {
+	status = "ok";
+	ese@0 {
+		compatible = "nxp,pn81a";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		/* i2c NFC device handles eSE power:
+		 * i2c_1, reg 0x28
+		 */
+		nxp,nfcc = "1-0028";
+	};
+};
+
 &qupv3_se14_i2c {
 	status = "ok";
 	fts@49 {
