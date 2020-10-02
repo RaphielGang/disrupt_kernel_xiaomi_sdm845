@@ -491,16 +491,16 @@ static int mhi_sm_change_to_M0(void)
 			}
 		}
 
-		res = mhi_dev_resume(mhi_sm_ctx->mhi_dev);
+		res = ipa_mhi_resume();
 		if (res) {
-			MHI_SM_ERR("Failed resuming mhi core, returned %d",
+			MHI_SM_ERR("Failed resuming ipa_mhi, returned %d",
 				res);
 			goto exit;
 		}
 
-		res = ipa_mhi_resume();
+		res = mhi_dev_resume(mhi_sm_ctx->mhi_dev);
 		if (res) {
-			MHI_SM_ERR("Failed resuming ipa_mhi, returned %d",
+			MHI_SM_ERR("Failed resuming mhi core, returned %d",
 				res);
 			goto exit;
 		}
@@ -929,7 +929,8 @@ int mhi_dev_sm_init(struct mhi_dev *mhi_dev)
 
 	/*init debugfs*/
 	mhi_sm_debugfs_init();
-	mhi_sm_ctx->mhi_sm_wq = create_singlethread_workqueue("mhi_sm_wq");
+	mhi_sm_ctx->mhi_sm_wq = alloc_workqueue(
+				"mhi_sm_wq", WQ_HIGHPRI | WQ_UNBOUND, 1);
 	if (!mhi_sm_ctx->mhi_sm_wq) {
 		MHI_SM_ERR("Failed to create singlethread_workqueue: sm_wq\n");
 		res = -ENOMEM;
