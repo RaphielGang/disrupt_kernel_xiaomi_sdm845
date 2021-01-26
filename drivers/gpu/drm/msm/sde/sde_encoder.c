@@ -5115,6 +5115,7 @@ int sde_encoder_display_failure_notification(struct drm_encoder *enc)
 	return 0;
 }
 
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 void sde_encoder_trigger_early_wakeup(struct drm_encoder *drm_enc,
 				struct msm_drm_private *priv)
 {
@@ -5145,3 +5146,4 @@ void sde_encoder_trigger_early_wakeup(struct drm_encoder *drm_enc,
 				SDE_ENC_RC_EVENT_EARLY_WAKEUP);
 	SDE_ATRACE_END("sde_encoder_resource_control");
 }
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP

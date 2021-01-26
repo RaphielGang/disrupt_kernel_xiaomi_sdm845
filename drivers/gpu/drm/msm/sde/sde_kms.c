@@ -3558,6 +3558,7 @@ int sde_kms_handle_recovery(struct drm_encoder *encoder)
 	return sde_encoder_wait_for_event(encoder, MSM_ENC_ACTIVE_REGION);
 }
 
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 void sde_kms_trigger_early_wakeup(struct sde_kms *sde_kms,
 		struct drm_crtc *crtc)
 {
@@ -3588,3 +3589,4 @@ void sde_kms_trigger_early_wakeup(struct sde_kms *sde_kms,
 	}
 	SDE_ATRACE_END("sde_kms_trigger_early_wakeup");
 }
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP

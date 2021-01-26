@@ -290,7 +290,9 @@ struct sde_crtc {
 	u32 sbuf_flush_mask_all;
 	u32 sbuf_flush_mask_delta;
 	struct kthread_delayed_work idle_notify_work;
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 	struct kthread_work early_wakeup_work;
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP
 
 	struct sde_power_event *power_event;
 

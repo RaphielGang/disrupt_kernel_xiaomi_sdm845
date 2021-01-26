@@ -699,6 +699,7 @@ static ssize_t vsync_event_show(struct device *device,
 			ktime_to_ns(sde_crtc->vblank_last_cb_time));
 }
 
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 static ssize_t early_wakeup_store(struct device *device,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -739,14 +740,26 @@ static ssize_t early_wakeup_store(struct device *device,
 
 	return count;
 }
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP
 
 static DEVICE_ATTR_RO(vsync_event);
+
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 static DEVICE_ATTR_WO(early_wakeup);
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP
+
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 static struct attribute *sde_crtc_dev_attrs[] = {
 	&dev_attr_vsync_event.attr,
 	&dev_attr_early_wakeup.attr,
 	NULL
 };
+#else
+static struct attribute *sde_crtc_dev_attrs[] = {
+	&dev_attr_vsync_event.attr,
+	NULL
+};
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP
 
 static const struct attribute_group sde_crtc_attr_group = {
 	.attrs = sde_crtc_dev_attrs,
@@ -6145,6 +6158,7 @@ static void __sde_crtc_idle_notify_work(struct kthread_work *work)
 	}
 }
 
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 /*
  * __sde_crtc_early_wakeup_work - trigger early wakeup from user space
  */
@@ -6173,6 +6187,7 @@ static void __sde_crtc_early_wakeup_work(struct kthread_work *work)
 	sde_kms = to_sde_kms(priv->kms);
 	sde_kms_trigger_early_wakeup(sde_kms, crtc);
 }
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP
 
 /* initialize crtc */
 struct drm_crtc *sde_crtc_init(struct drm_device *dev, struct drm_plane *plane)
@@ -6246,8 +6261,11 @@ struct drm_crtc *sde_crtc_init(struct drm_device *dev, struct drm_plane *plane)
 
 	kthread_init_delayed_work(&sde_crtc->idle_notify_work,
 					__sde_crtc_idle_notify_work);
+
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 	kthread_init_work(&sde_crtc->early_wakeup_work,
 					__sde_crtc_early_wakeup_work);
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP
 
 	SDE_DEBUG("%s: successfully initialized crtc\n", sde_crtc->name);
 	return crtc;

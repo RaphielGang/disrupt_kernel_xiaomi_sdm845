@@ -695,6 +695,7 @@ void sde_kms_timeline_status(struct drm_device *dev);
  */
 int sde_kms_handle_recovery(struct drm_encoder *encoder);
 
+#ifdef CONFIG_DRM_SDE_EARLY_WAKEUP
 /**
  * sde_kms_trigger_early_wakeup - trigger early wake up
  * @sde_kms: pointer to sde_kms structure
@@ -702,5 +703,6 @@ int sde_kms_handle_recovery(struct drm_encoder *encoder);
  */
 void sde_kms_trigger_early_wakeup(struct sde_kms *sde_kms,
 		struct drm_crtc *crtc);
+#endif // CONFIG_DRM_SDE_EARLY_WAKEUP
 
 #endif /* __sde_kms_H__ */

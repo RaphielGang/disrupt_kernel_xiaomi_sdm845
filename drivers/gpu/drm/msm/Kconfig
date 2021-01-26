@@ -130,6 +130,13 @@ config DRM_SDE_WB
 	help
 	  Choose this option for writeback connector support.
 
+config DRM_SDE_EARLY_WAKEUP
+	bool "Enable early wakeup support in SDE DRM"
+	depends on DRM_MSM
+	default n
+	help
+		Choose this option for early wakeup support.
+
 config DRM_SDE_EVTLOG_DEBUG
 	bool "Enable event logging in MSM DRM"
 	depends on DRM_MSM
